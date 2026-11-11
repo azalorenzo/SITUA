@@ -8,7 +8,29 @@ El backend ya puede conectarse a `tutoria`. Usa las variables `BD_SERVIDOR`, `BD
 
 `backend/.env.example` sirve como plantilla sin secretos; `application.properties.example` muestra la configuración compartida. El `.env` real está excluido por el `.gitignore` general.
 
-Desde `backend`, ejecutar `./mvnw.cmd spring-boot:run` en Windows (o `./mvnw spring-boot:run` en Linux). La prueba de arranque se ejecuta con `./mvnw.cmd test`. Hibernate no crea ni cambia tablas y no se ejecutan scripts SQL al arrancar. Este avance no incorpora todavía Flyway al arranque de Spring Boot.
+Desde `backend`, ejecutar `./mvnw.cmd spring-boot:run` en Windows (o `./mvnw spring-boot:run` en Linux). La prueba de arranque se ejecuta con `./mvnw.cmd test`. Hibernate no crea ni cambia tablas. Flyway revisa las migraciones al arrancar y aplica solamente las que faltan, antes de iniciar JPA.
+
+## Respuestas de error del backend
+
+El paquete `errores` contiene `RespuestaError` y `ManejadorErrores`. Por ahora cubre validación de formularios con `@Valid` y JSON que no se puede leer. No se agregaron endpoints de negocio.
+
+Cuando los campos no cumplen sus reglas, la respuesta es HTTP 422:
+
+```json
+{
+  "estado": 422,
+  "mensaje": "Revisa los campos del formulario.",
+  "erroresPorCampo": {
+    "correo": ["Escribe un correo válido."]
+  }
+}
+```
+
+Cada campo puede tener varios mensajes. Los errores del formulario completo se agrupan en `general`. Un cuerpo vacío, JSON mal escrito o un tipo incorrecto devuelve HTTP 400 con un mensaje general y `erroresPorCampo` vacío. No se devuelve el contenido rechazado ni detalles de la excepción.
+
+Las reglas se escriben en los futuros DTOs mediante Bean Validation; el manejador solo organiza sus mensajes. Los errores de recursos inexistentes, seguridad y otros módulos se agregarán en sus respectivos avances.
+
+Las seis pruebas de este manejador usan un controlador que existe solamente en los archivos de prueba, sin necesitar MySQL. La prueba general de arranque continúa utilizando la configuración local de la base. Ejecutar todo con `./mvnw.cmd test` desde `backend`; Maven reconoce también los archivos terminados en `Pruebas` para conservar los nombres en español. Pasaron las siete pruebas actuales.
 
 ## Base de datos
 
@@ -24,7 +46,7 @@ Crear estas tablas no implementa login, recuperación, logout ni comunicaciones:
 
 ## Migraciones e instalación
 
-Las migraciones oficiales están en `backend/src/main/resources/db/migration`. No editar una migración ya aplicada; crear V3, V4, etc. El POM de `database` permite trabajar con Flyway sin arrancar Spring Boot ni modificar todavía la aplicación.
+Las migraciones oficiales están en `backend/src/main/resources/base_datos/migraciones`. No editar una migración ya aplicada; crear V3, V4, etc. El POM de `database` permite trabajar con Flyway sin arrancar Spring Boot.
 
 Requisitos: Java, Maven Wrapper del backend, Node.js, MySQL y una base vacía creada con utf8mb4/utf8mb4_0900_ai_ci. Las migraciones crean las tablas, no el servidor ni las credenciales.
 
@@ -41,7 +63,33 @@ node database/seed.cjs
 
 `migrate` en una base vacía ejecuta V1 y V2. La base local existente ya está en V2: no ejecutar baseline nuevamente. Para adoptar otra base preexistente, comparar su estructura con V1 y respaldarla antes de usar baseline; el baseline automático está deshabilitado. `clean` está deshabilitado.
 
-La herramienta lee las credenciales del archivo local excluido por Git y las entrega a Flyway mediante variables de entorno. No las imprime ni las incorpora al POM. `FLYWAY_URL` permite elegir otra conexión JDBC; `FLYWAY_OFFLINE=true` permite usar las dependencias ya descargadas. El backend aún no está configurado para ejecutar Flyway automáticamente al arrancar.
+La herramienta lee las credenciales del archivo local excluido por Git y las entrega a Flyway mediante variables de entorno. No las imprime ni las incorpora al POM. `FLYWAY_URL` permite elegir otra conexión JDBC; `FLYWAY_OFFLINE=true` permite usar las dependencias ya descargadas. El backend utiliza la misma versión de Flyway (13.12.1) y ejecuta automáticamente las migraciones al arrancar. Las herramientas de `database` siguen disponibles para mantenimiento.
+
+## Preparar la base en otra computadora
+
+No hace falta copiar la base de datos de otro integrante ni compartir su contraseña. Cada persona usa su propio MySQL y sus credenciales locales.
+
+Crear solamente la base vacía desde MySQL Workbench o un cliente MySQL:
+
+```sql
+CREATE DATABASE tutoria
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_0900_ai_ci;
+```
+
+Desde la carpeta `backend`, copiar la plantilla y completar los datos de esa computadora:
+
+```powershell
+Copy-Item .env.example .env
+# Editar .env con el usuario y la contraseña propios.
+.\mvnw.cmd spring-boot:run
+```
+
+Al arrancar, Flyway ejecuta V1 y V2 sobre esa base vacía. Quedan creadas las 27 tablas funcionales, las 4 vistas, los catálogos iniciales y su tabla de historial. Volver a arrancar no repite las migraciones aplicadas. Hibernate conserva `ddl-auto=none`. Se comprobaron ambos arranques con una base temporal vacía y se confirmó que la base principal conserva sus datos.
+
+Los usuarios y ejemplos se cargan aparte: abrir `database/seeds/001_datos_demo.sql` en MySQL Workbench, seleccionar `tutoria` como base de trabajo y ejecutar el script. También se puede usar `node database/seed.cjs` con la configuración local de las herramientas. El seed crea las cuentas documentadas abajo y se puede repetir sin duplicarlas. El arranque del backend no carga estos datos automáticamente.
+
+Si ya existe una base con tablas, no importar el esquema antiguo ni activar baseline automático para saltarse errores. La base local original ya tiene su baseline registrado; una base nueva vacía no necesita ese paso. Las migraciones que ya estén aplicadas se conservan sin editar.
 
 ## Datos de demostración y acceso futuro
 

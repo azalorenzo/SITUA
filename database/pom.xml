@@ -2,7 +2,7 @@
  <modelVersion>4.0.0</modelVersion><groupId>com.progweb</groupId><artifactId>tutoria-database</artifactId><version>1.0.0</version><packaging>pom</packaging>
  <build><plugins><plugin>
  <groupId>org.flywaydb</groupId><artifactId>flyway-maven-plugin</artifactId><version>13.12.1</version>
- <configuration><locations><location>filesystem:${project.basedir}/../backend/src/main/resources/db/migration</location></locations><cleanDisabled>true</cleanDisabled><baselineOnMigrate>false</baselineOnMigrate><baselineVersion>1</baselineVersion><validateMigrationNaming>true</validateMigrationNaming></configuration>
+ <configuration><locations><location>filesystem:${project.basedir}/../backend/src/main/resources/base_datos/migraciones</location></locations><cleanDisabled>true</cleanDisabled><baselineOnMigrate>false</baselineOnMigrate><baselineVersion>1</baselineVersion><validateMigrationNaming>true</validateMigrationNaming></configuration>
  <dependencies><dependency><groupId>org.flywaydb</groupId><artifactId>flyway-mysql</artifactId><version>13.12.1</version></dependency><dependency><groupId>com.mysql</groupId><artifactId>mysql-connector-j</artifactId><version>26.10.0</version></dependency></dependencies>
  </plugin></plugins></build>
 </project>

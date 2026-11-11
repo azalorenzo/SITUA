@@ -67,3 +67,7 @@ Desktop.ini
 
 # Se conservan fuentes, scripts SQL, package-lock.json, pom.xml,
 # mvnw, mvnw.cmd y .mvn/wrapper/maven-wrapper.properties.
+
+# Respaldos locales con datos y salidas de Maven de herramientas
+/database/backups/
+/database/target/

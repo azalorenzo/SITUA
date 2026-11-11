@@ -5,7 +5,7 @@ SELECT TABLE_TYPE, COUNT(*) AS cantidad
 FROM information_schema.TABLES
 WHERE TABLE_SCHEMA = 'tutoria'
 GROUP BY TABLE_TYPE;
--- Esperado: 24 BASE TABLE y 4 VIEW.
+-- Esperado: 28 BASE TABLE (27 de dominio y flyway_schema_history) y 4 VIEW.
 
 SELECT CONSTRAINT_TYPE, COUNT(*) AS cantidad
 FROM information_schema.TABLE_CONSTRAINTS
@@ -26,4 +26,4 @@ ORDER BY TABLE_NAME, CONSTRAINT_NAME, ORDINAL_POSITION;
 SELECT codigo, nombre FROM tutoria.roles ORDER BY id;
 SELECT codigo, nombre FROM tutoria.motivos_reporte ORDER BY id;
 SELECT COUNT(*) AS usuarios_reales_o_prueba FROM tutoria.usuarios;
--- Esperado después de la creación: 3 roles, 4 motivos y 0 usuarios.
+-- Esperado después de V2 y el seed: 3 roles, 4 motivos y 31 usuarios tras el seed de demostración.

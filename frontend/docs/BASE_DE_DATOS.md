@@ -1,5 +1,7 @@
 # Análisis de pantallas y diseño lógico de la base de datos
 
+> Documento de propuesta original V1. La base fue ampliada a V2 mediante Flyway: 27 tablas funcionales y 3 entidades nuevas (tokens_recuperacion, tokens_revocados y envios_comunicacion). El estado actual se documenta en el README de la raíz y en database/diagrama-er/DIAGRAMA_ER.md (dentro de frontend).
+
 Fecha de revisión: 11 de noviembre de 2026.
 
 Este documento describe los datos necesarios para conectar el mockup a un servidor. Se basa en los componentes de `src/app`, sus formularios, tablas, detalles, filtros y datos de ejemplo. No modifica las pantallas ni implementa un backend.

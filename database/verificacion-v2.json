@@ -1,0 +1,55 @@
+{
+  "fecha": "2026-11-11",
+  "tablasFuncionales": 27,
+  "tablaTecnica": "flyway_schema_history",
+  "columnas": 236,
+  "relaciones": 45,
+  "checks": 37,
+  "vistas": 4,
+  "pruebasIntegridad": 21,
+  "instalacionDesdeCeroVerificada": true,
+  "seedRepetibleVerificado": true,
+  "conteos": {
+    "actividades_personales": 15,
+    "asignaciones_tutor": 15,
+    "aviso_destinatarios": 15,
+    "avisos": 15,
+    "carreras": 1,
+    "conversacion_participantes": 30,
+    "conversaciones": 15,
+    "departamentos": 1,
+    "disponibilidades_tutor": 15,
+    "envios_comunicacion": 15,
+    "estudiantes": 15,
+    "materiales_sesion": 15,
+    "mediciones_academicas": 15,
+    "mensajes": 30,
+    "motivos_reporte": 4,
+    "observaciones_estudiante": 15,
+    "periodos_academicos": 1,
+    "reportes": 15,
+    "roles": 3,
+    "sesion_cambios": 15,
+    "sesiones": 15,
+    "situaciones_academicas": 15,
+    "tokens_recuperacion": 0,
+    "tokens_revocados": 0,
+    "tutores": 15,
+    "usuario_roles": 31,
+    "usuarios": 31
+  },
+  "historial": [
+    {
+      "version": "1",
+      "description": "<< Flyway Baseline >>",
+      "type": "BASELINE",
+      "success": 1
+    },
+    {
+      "version": "2",
+      "description": "autenticacion y comunicaciones",
+      "type": "SQL",
+      "success": 1
+    }
+  ]
+}

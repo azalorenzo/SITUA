@@ -14,7 +14,7 @@ import { StudentsManagementView } from './components/StudentsManagementView';
 import { AssignmentsView } from './components/AssignmentsView';
 import { CoordinatorNotificationsView } from './components/CoordinatorNotificationsView';
 import { Users, UserCheck, FileText, AlertTriangle, Bell, LogOut, ArrowLeft } from 'lucide-react';
-import Login from './components/Login';
+import InicioSesion from './components/InicioSesion';
 
 export default function App() {
   const [logueado, setLogueado] = useState(false);
@@ -25,7 +25,7 @@ export default function App() {
   const logout = () => { setLogueado(false); setActiveSection('inicio'); };
   
   if (!logueado) {
-    return <Login onEnter={(role) => { setUserRole(role); setLogueado(true); }} />;
+    return <InicioSesion />;
   }
   if (userRole === 'student') {
     return (

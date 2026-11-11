@@ -1,0 +1,69 @@
+# Variables y secretos locales de ambos proyectos
+.env
+.env.*
+!.env.example
+!.env.*.example
+!.env.template
+!.env.*.template
+*.local
+**/database/connection.local.json
+*.jks
+*.keystore
+*.p12
+*.pfx
+
+# Frontend: React / Vite / Node
+node_modules/
+/frontend/dist/
+/frontend/.vite/
+/frontend/coverage/
+/frontend/.nyc_output/
+/frontend/.eslintcache
+/frontend/*.tsbuildinfo
+/frontend/.mysql-tools/
+/frontend/reportes_pdf/*.pdf
+
+# Backend: Spring Boot / Maven
+/backend/target/
+/backend/build/
+/backend/.gradle/
+/backend/.mvn/wrapper/maven-wrapper.jar
+/backend/HELP.md
+/backend/src/main/resources/application-local.properties
+/backend/src/main/resources/application-local.yml
+/backend/src/main/resources/application-local.yaml
+*.class
+*.hprof
+hs_err_pid*
+replay_pid*
+
+# Logs y archivos temporales
+*.log
+logs/
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Configuración local de editores e IDE
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.classpath
+.project
+.factorypath
+.settings/
+.apt_generated/
+.springBeans
+.sts4-cache/
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Se conservan fuentes, scripts SQL, package-lock.json, pom.xml,
+# mvnw, mvnw.cmd y .mvn/wrapper/maven-wrapper.properties.

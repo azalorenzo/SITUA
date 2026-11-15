@@ -1,3 +1,4 @@
+import type { UsuarioSesion } from '../tipos/autenticacion';
 import { useState } from 'react';
 
 import { StudentSidebar } from './StudentSidebar';
@@ -8,18 +9,18 @@ import { StudentTutoriasView } from './StudentTutoriasView';
 import { StudentMessagesView } from './StudentMessagesView';
 import { StudentNotificationsView } from './StudentNotificationsView';
 
-export function StudentApp({ onLogout }: { onLogout: () => void }) {
+export function StudentApp({ onLogout, usuario }: { onLogout: () => void; usuario: UsuarioSesion }) {
 
   const [activeSection, setActiveSection] = useState('inicio');
 
   const nombreEstudiante =
-    "Ana Laura Gómez";
+    usuario.nombre;
 
   return (
 
     <div className="flex h-screen bg-[#F5F7FA] text-[#0B2828]">
 
-      <StudentSidebar onLogout={onLogout}
+      <StudentSidebar onLogout={onLogout} correoUsuario={usuario.correo} avatarUsuario={usuario.avatarUrl}
         activeSection={activeSection}
         onSectionChange={setActiveSection}
         nombreEstudiante={nombreEstudiante || ""}

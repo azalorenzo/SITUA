@@ -1,15 +1,14 @@
 {
   "resumen": {
     "base": "tutoria",
-    "fecha": "2026-11-11",
     "servidor": {
       "version": "26.10.0",
       "producto": "MySQL Community Server - GPL"
     },
-    "tablas": 27,
-    "columnas": 236,
-    "relaciones": 45,
-    "checks": 37,
+    "tablas": 28,
+    "columnas": 241,
+    "relaciones": 46,
+    "checks": 39,
     "vistas": 4
   },
   "tablas": [
@@ -65,6 +64,11 @@
     },
     {
       "nombre": "estudiantes",
+      "motor": "InnoDB",
+      "cotejamiento": "utf8mb4_0900_ai_ci"
+    },
+    {
+      "nombre": "identidades_externas",
       "motor": "InnoDB",
       "cotejamiento": "utf8mb4_0900_ai_ci"
     },
@@ -1098,6 +1102,56 @@
       "admite_null": "NO",
       "valor_default": "CURRENT_TIMESTAMP(6)",
       "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP(6)",
+      "expresion": ""
+    },
+    {
+      "tabla": "identidades_externas",
+      "nombre": "id",
+      "posicion": 1,
+      "tipo": "bigint unsigned",
+      "admite_null": "NO",
+      "valor_default": null,
+      "extra": "auto_increment",
+      "expresion": ""
+    },
+    {
+      "tabla": "identidades_externas",
+      "nombre": "usuario_id",
+      "posicion": 2,
+      "tipo": "bigint unsigned",
+      "admite_null": "NO",
+      "valor_default": null,
+      "extra": "",
+      "expresion": ""
+    },
+    {
+      "tabla": "identidades_externas",
+      "nombre": "proveedor",
+      "posicion": 3,
+      "tipo": "varchar(20)",
+      "admite_null": "NO",
+      "valor_default": null,
+      "extra": "",
+      "expresion": ""
+    },
+    {
+      "tabla": "identidades_externas",
+      "nombre": "identificador_externo",
+      "posicion": 4,
+      "tipo": "varchar(255)",
+      "admite_null": "NO",
+      "valor_default": null,
+      "extra": "",
+      "expresion": ""
+    },
+    {
+      "tabla": "identidades_externas",
+      "nombre": "creado_en",
+      "posicion": 5,
+      "tipo": "datetime(6)",
+      "admite_null": "NO",
+      "valor_default": "CURRENT_TIMESTAMP(6)",
+      "extra": "DEFAULT_GENERATED",
       "expresion": ""
     },
     {
@@ -2455,7 +2509,7 @@
       "nombre": "password_hash",
       "posicion": 4,
       "tipo": "varchar(255)",
-      "admite_null": "NO",
+      "admite_null": "YES",
       "valor_default": null,
       "extra": "",
       "expresion": ""
@@ -2861,6 +2915,54 @@
       "restriccion": "uq_estudiante_usuario",
       "columna": "usuario_id",
       "posicion": 1,
+      "tabla_padre": null,
+      "columna_padre": null
+    },
+    {
+      "tabla": "identidades_externas",
+      "restriccion": "fk_identidad_usuario",
+      "columna": "usuario_id",
+      "posicion": 1,
+      "tabla_padre": "usuarios",
+      "columna_padre": "id"
+    },
+    {
+      "tabla": "identidades_externas",
+      "restriccion": "PRIMARY",
+      "columna": "id",
+      "posicion": 1,
+      "tabla_padre": null,
+      "columna_padre": null
+    },
+    {
+      "tabla": "identidades_externas",
+      "restriccion": "uq_identidad_proveedor",
+      "columna": "proveedor",
+      "posicion": 1,
+      "tabla_padre": null,
+      "columna_padre": null
+    },
+    {
+      "tabla": "identidades_externas",
+      "restriccion": "uq_identidad_proveedor",
+      "columna": "identificador_externo",
+      "posicion": 2,
+      "tabla_padre": null,
+      "columna_padre": null
+    },
+    {
+      "tabla": "identidades_externas",
+      "restriccion": "uq_usuario_proveedor",
+      "columna": "usuario_id",
+      "posicion": 1,
+      "tabla_padre": null,
+      "columna_padre": null
+    },
+    {
+      "tabla": "identidades_externas",
+      "restriccion": "uq_usuario_proveedor",
+      "columna": "proveedor",
+      "posicion": 2,
       "tabla_padre": null,
       "columna_padre": null
     },
@@ -3939,6 +4041,46 @@
       "tipo": "BTREE"
     },
     {
+      "tabla": "identidades_externas",
+      "nombre": "PRIMARY",
+      "no_unico": 0,
+      "posicion": 1,
+      "columna": "id",
+      "tipo": "BTREE"
+    },
+    {
+      "tabla": "identidades_externas",
+      "nombre": "uq_identidad_proveedor",
+      "no_unico": 0,
+      "posicion": 1,
+      "columna": "proveedor",
+      "tipo": "BTREE"
+    },
+    {
+      "tabla": "identidades_externas",
+      "nombre": "uq_identidad_proveedor",
+      "no_unico": 0,
+      "posicion": 2,
+      "columna": "identificador_externo",
+      "tipo": "BTREE"
+    },
+    {
+      "tabla": "identidades_externas",
+      "nombre": "uq_usuario_proveedor",
+      "no_unico": 0,
+      "posicion": 1,
+      "columna": "usuario_id",
+      "tipo": "BTREE"
+    },
+    {
+      "tabla": "identidades_externas",
+      "nombre": "uq_usuario_proveedor",
+      "no_unico": 0,
+      "posicion": 2,
+      "columna": "proveedor",
+      "tipo": "BTREE"
+    },
+    {
       "tabla": "materiales_sesion",
       "nombre": "fk_material_autor",
       "no_unico": 1,
@@ -4822,6 +4964,16 @@
       "tabla": "estudiantes",
       "nombre": "ck_estudiante_matricula",
       "expresion": "(char_length(trim(`matricula`)) > 0)"
+    },
+    {
+      "tabla": "identidades_externas",
+      "nombre": "ck_identidad_identificador",
+      "expresion": "(char_length(trim(`identificador_externo`)) > 0)"
+    },
+    {
+      "tabla": "identidades_externas",
+      "nombre": "ck_identidad_proveedor",
+      "expresion": "(`proveedor` = _utf8mb4\\'google\\')"
     },
     {
       "tabla": "mediciones_academicas",

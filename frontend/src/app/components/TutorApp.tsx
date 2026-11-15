@@ -1,3 +1,4 @@
+import type { UsuarioSesion } from '../tipos/autenticacion';
 import { useState } from 'react';
 import { TutorSidebar } from './TutorSidebar';
 import { TutorView } from './TutorView';
@@ -8,13 +9,13 @@ import { TutorReportsView } from './TutorReportsView';
 import { TutorNotificationsView } from './TutorNotificationsView';
 import { MessagesView } from './MessagesView';
 
-export function TutorApp({ onLogout }: { onLogout: () => void }) {
+export function TutorApp({ onLogout, usuario }: { onLogout: () => void; usuario: UsuarioSesion }) {
   const [activeSection, setActiveSection] = useState('inicio');
-  const nombreTutor = "Javier López García";
+  const nombreTutor = usuario.nombre;
 
   return (
     <div className="flex h-screen bg-[#F5F7FA] text-[#0B2828]">
-      <TutorSidebar onLogout={onLogout}
+      <TutorSidebar onLogout={onLogout} correoUsuario={usuario.correo} avatarUsuario={usuario.avatarUrl}
         activeSection={activeSection}
         onSectionChange={setActiveSection}
         nombreTutor={nombreTutor}

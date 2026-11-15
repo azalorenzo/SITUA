@@ -3,12 +3,14 @@ import tutorImg from '../../assets/tutor.png';
 
 interface TutorSidebarProps {
   onLogout: () => void;
+  correoUsuario: string;
+  avatarUsuario: string | null;
   activeSection: string;
   onSectionChange: (section: string) => void;
   nombreTutor : string;
 }
 
-export function TutorSidebar({ onLogout, activeSection, onSectionChange, nombreTutor }: TutorSidebarProps) {
+export function TutorSidebar({ onLogout, correoUsuario, avatarUsuario, activeSection, onSectionChange, nombreTutor }: TutorSidebarProps) {
   const menuItems = [
     { id: 'inicio', label: 'Inicio', icon: Home },
     { id: 'mis-estudiantes', label: 'Mis tutorados', icon: Users },
@@ -57,8 +59,8 @@ export function TutorSidebar({ onLogout, activeSection, onSectionChange, nombreT
   <div className="flex items-center gap-3 mb-4">
 
     <img
-      src= {tutorImg}
-      alt="Javier López"
+      src={avatarUsuario || tutorImg}
+      alt="Avatar del usuario"
       className="w-10 h-10 rounded-full"
     />
   
@@ -71,6 +73,7 @@ export function TutorSidebar({ onLogout, activeSection, onSectionChange, nombreT
       <p className="text-[#D3F4EE] text-xs">
         Tutor
       </p>
+      <p className="correo-sesion">{correoUsuario}</p>
 
     </div>
 

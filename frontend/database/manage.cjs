@@ -16,7 +16,7 @@ function validateSource() {
 async function check(c) {
   const [tables] = await c.query("SELECT TABLE_NAME nombre, ENGINE motor, TABLE_TYPE tipo FROM information_schema.TABLES WHERE TABLE_SCHEMA='tutoria'");
   const base = tables.filter(t => t.tipo === 'BASE TABLE' && t.nombre !== 'flyway_schema_history'), views = tables.filter(t => t.tipo === 'VIEW');
-  if (base.length !== 27 || views.length !== 4 || [...expected,'tokens_recuperacion','tokens_revocados','envios_comunicacion'].some(n => !base.find(t => t.nombre === n && t.motor === 'InnoDB'))) throw Error('La estructura instalada no coincide con el esquema esperado.');
+  if (base.length !== 28 || views.length !== 4 || [...expected,'tokens_recuperacion','tokens_revocados','envios_comunicacion','identidades_externas'].some(n => !base.find(t => t.nombre === n && t.motor === 'InnoDB'))) throw Error('La estructura instalada no coincide con el esquema esperado.');
   const [counts] = await c.query("SELECT CONSTRAINT_TYPE tipo, COUNT(*) cantidad FROM information_schema.TABLE_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='tutoria' GROUP BY CONSTRAINT_TYPE");
   const [[seed]] = await c.query('SELECT (SELECT COUNT(*) FROM tutoria.roles) roles, (SELECT COUNT(*) FROM tutoria.motivos_reporte) motivos');
   if (Number(seed.roles) !== 3 || Number(seed.motivos) !== 4) throw Error('Los catálogos no coinciden con la versión inicial.');

@@ -11,12 +11,14 @@ import estudianteImg from '../../assets/estudiante.png';
 
 interface StudentSidebarProps {
   onLogout: () => void;
+  correoUsuario: string;
+  avatarUsuario: string | null;
   activeSection: string;
   onSectionChange: (section: string) => void;
   nombreEstudiante: string;
 }
 
-export function StudentSidebar({ onLogout,
+export function StudentSidebar({ onLogout, correoUsuario, avatarUsuario,
   activeSection,
   onSectionChange,
   nombreEstudiante
@@ -94,7 +96,7 @@ export function StudentSidebar({ onLogout,
         <div className="flex items-center gap-3 mb-4">
 
           <img
-            src={estudianteImg}
+            src={avatarUsuario || estudianteImg}
             alt="Estudiante"
             className="w-10 h-10 rounded-full"
           />
@@ -108,6 +110,7 @@ export function StudentSidebar({ onLogout,
             <p className="text-[#D3F4EE] text-xs">
               Estudiante
             </p>
+      <p className="correo-sesion">{correoUsuario}</p>
 
           </div>
 

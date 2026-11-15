@@ -43,4 +43,21 @@ public class ManejadorErrores {
                 400, "Envía un JSON válido con los datos y tipos esperados.", Map.of());
         return ResponseEntity.badRequest().body(respuesta);
     }
+    @ExceptionHandler(AccesoRechazado.class)
+    public ResponseEntity<RespuestaError> manejarAccesoRechazado(AccesoRechazado excepcion) {
+        return ResponseEntity.status(excepcion.obtenerEstado())
+                .body(new RespuestaError(excepcion.obtenerEstado(), excepcion.getMessage(), Map.of()));
+    }
+    @ExceptionHandler(SolicitudRechazada.class)
+    public ResponseEntity<RespuestaError> manejarSolicitudRechazada(SolicitudRechazada excepcion) {
+        return ResponseEntity.status(excepcion.obtenerEstado()).body(new RespuestaError(
+                excepcion.obtenerEstado(), excepcion.getMessage(), excepcion.obtenerErroresPorCampo()));
+    }
+
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<RespuestaError> manejarDatosDuplicados(
+            org.springframework.dao.DataIntegrityViolationException excepcion) {
+        return ResponseEntity.status(409).body(new RespuestaError(409,
+                "Los datos ya están registrados o no se pueden guardar. Revisa el correo y la matrícula.", Map.of()));
+    }
 }

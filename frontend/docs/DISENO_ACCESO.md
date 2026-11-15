@@ -1,10 +1,10 @@
 # Diseño del inicio de sesión
 
-Se reemplazó `Login.tsx` por `src/app/components/InicioSesion.tsx`. La pantalla recrea la tarjeta dividida, los colores y los campos de la referencia, y añade un botón visual para continuar con Google.
+Se reemplazó `Login.tsx` por `src/app/components/InicioSesion.tsx`. La pantalla recrea la tarjeta dividida, los colores y los campos de la referencia, y añade el acceso con Google, preparado para activarse con su ID de cliente.
 
-El formulario no envía peticiones ni cambia de pantalla. Google, recuperación y registro no tienen integración. Mostrar/ocultar contraseña y la casilla de recordar sesión son únicamente controles locales; no se persiste ninguna sesión. El selector de perfiles del login anterior fue retirado.
+El formulario por correo y contraseña ahora se conecta al backend con JWT y abre las pantallas por rol. La casilla de recordar sesión determina el almacenamiento del token. El registro crea estudiantes y abre su sesión. Google está conectado en código y desactivado mientras falte el ID de cliente; al activarlo utiliza el botón oficial. La recuperación continúa pendiente. El selector de perfiles del login anterior fue retirado; el rol se obtiene del servidor.
 
-La presentación se comprobó en 1440×1000, 882×565 y 390×844. El frontend compiló correctamente. No se modificó el backend.
+La presentación se comprobó en 1440×1000, 882×565 y 390×844. El frontend compiló correctamente. La integración actual y sus pruebas se explican en el README general.
 
 ## Fotografía
 

@@ -1,5 +1,7 @@
 import { mockDashboard, mockDashboardStats } from './mock/data';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { consultarSesion, guardarSesion, limpiarSesion, obtenerToken, obtenerVencimiento, ErrorSolicitud } from './servicios/autenticacion';
+import type { UsuarioSesion, RespuestaInicioSesion } from './tipos/autenticacion';
 import { Sidebar } from './components/Sidebar';
 import { StatCard } from './components/StatCard';
 
@@ -17,28 +19,63 @@ import { Users, UserCheck, FileText, AlertTriangle, Bell, LogOut, ArrowLeft } fr
 import InicioSesion from './components/InicioSesion';
 
 export default function App() {
-  const [logueado, setLogueado] = useState(false);
-  const [userRole, setUserRole] = useState<'coordinator' | 'student' | 'tutor'>('coordinator');
+  const [usuario, cambiarUsuario] = useState<UsuarioSesion | null>(null);
+  const [revisandoSesion, cambiarRevisandoSesion] = useState(true);
+  const [mensajeSesion, cambiarMensajeSesion] = useState('');
+  const [vencimiento, cambiarVencimiento] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState('inicio');
   const dashboard = mockDashboard;
   const dashboardStats = mockDashboardStats;
-  const logout = () => { setLogueado(false); setActiveSection('inicio'); };
-  
-  if (!logueado) {
-    return <InicioSesion />;
-  }
-  if (userRole === 'student') {
+
+  useEffect(() => {
+    let vigente = true;
+    if (!obtenerToken()) { cambiarRevisandoSesion(false); return; }
+    consultarSesion().then(datos => {
+      if (vigente) { cambiarUsuario(datos); cambiarVencimiento(obtenerVencimiento()); }
+    }).catch(error => {
+      if (!vigente) return;
+      if (error instanceof ErrorSolicitud && (error.estado === 401 || error.estado === 403)) limpiarSesion();
+      cambiarMensajeSesion(error instanceof Error ? error.message : 'No se pudo recuperar la sesión.');
+    }).finally(() => { if (vigente) cambiarRevisandoSesion(false); });
+    return () => { vigente = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!usuario || !vencimiento) return;
+    const tiempo = Math.max(0, Date.parse(vencimiento) - Date.now());
+    const aviso = window.setTimeout(() => {
+      limpiarSesion(); cambiarUsuario(null); cambiarVencimiento(null); setActiveSection('inicio');
+      cambiarMensajeSesion('Tu sesión venció. Inicia sesión nuevamente.');
+    }, tiempo);
+    return () => window.clearTimeout(aviso);
+  }, [usuario, vencimiento]);
+
+  const cerrarSesion = () => {
+    limpiarSesion(); cambiarUsuario(null); cambiarVencimiento(null);
+    cambiarMensajeSesion(''); setActiveSection('inicio');
+  };
+  const recibirSesion = (respuesta: RespuestaInicioSesion, recordar: boolean) => {
+    guardarSesion(respuesta, recordar); cambiarUsuario(respuesta.usuario);
+    cambiarVencimiento(respuesta.venceEn); cambiarMensajeSesion(''); setActiveSection('inicio');
+  };
+  const rolUsuario = usuario?.roles.includes('coordinador') ? 'coordinator'
+    : usuario?.roles.includes('tutor') ? 'tutor'
+    : usuario?.roles.includes('estudiante') ? 'student' : null;
+
+  if (revisandoSesion) return <main className="inicio-sesion"><p className="cargando-sesion" role="status">Comprobando tu sesión…</p></main>;
+  if (!usuario || !rolUsuario) return <InicioSesion alIngresar={recibirSesion} mensajeInicial={mensajeSesion} />;
+  if (rolUsuario === 'student') {
     return (
       <div>
-        <StudentApp onLogout={logout} />
+        <StudentApp onLogout={cerrarSesion} usuario={usuario} />
       </div>
     );
   }
 
-  if (userRole === 'tutor') {
+  if (rolUsuario === 'tutor') {
     return (
       <div>
-        <TutorApp onLogout={logout} />
+        <TutorApp onLogout={cerrarSesion} usuario={usuario} />
       </div>
     );
   }
@@ -51,7 +88,8 @@ export default function App() {
 
   onSectionChange={setActiveSection}
 
-  onLogout={logout}
+  onLogout={cerrarSesion}
+  usuario={usuario}
 
   
 
@@ -69,7 +107,7 @@ export default function App() {
                 <Users className="w-6 h-6" />
               </div>
               <div>
-                <h2 className="font-semibold">¡Bienvenida, Coordinadora!</h2>
+                <h2 className="font-semibold">¡Hola, {usuario.nombre}!</h2>
                 <p className="text-sm text-[#53716E]">Gestiona tu programa de tutorados</p>
               </div>
             </div>

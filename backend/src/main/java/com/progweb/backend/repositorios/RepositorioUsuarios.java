@@ -18,4 +18,7 @@ public interface RepositorioUsuarios extends JpaRepository<Usuario, Long> {
     @Query("select distinct usuario from Usuario usuario left join fetch usuario.roles "
             + "where usuario.correo = :correo")
     Optional<Usuario> buscarPorCorreoConRoles(@Param("correo") String correo);
+    @Query("select distinct usuario from Usuario usuario left join fetch usuario.roles "
+            + "where usuario.id = :identificador")
+    Optional<Usuario> buscarPorIdConRoles(@Param("identificador") Long identificador);
 }

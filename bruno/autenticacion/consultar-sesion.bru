@@ -1,0 +1,22 @@
+meta {
+  name: Consultar sesión con JWT
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{url_api}}/autenticacion/sesion
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{token_acceso}}
+}
+
+tests {
+  test("Acepta el token enviado en Authorization", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().correo).to.equal("estudiante@demo.example");
+  });
+}

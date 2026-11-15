@@ -117,6 +117,13 @@ erDiagram
         datetime(6) creado_en "NOT NULL"
         datetime(6) actualizado_en "NOT NULL"
     }
+    identidades_externas {
+        bigint_unsigned id PK "NOT NULL AUTO_INCREMENT"
+        bigint_unsigned usuario_id FK "NOT NULL"
+        varchar(20) proveedor "NOT NULL"
+        varchar(255) identificador_externo "NOT NULL"
+        datetime(6) creado_en "NOT NULL"
+    }
     materiales_sesion {
         bigint_unsigned id PK "NOT NULL AUTO_INCREMENT"
         bigint_unsigned sesion_id FK "NOT NULL"
@@ -283,7 +290,7 @@ erDiagram
         bigint_unsigned id PK "NOT NULL AUTO_INCREMENT"
         varchar(160) nombre "NOT NULL"
         varchar(254) correo UK "NOT NULL"
-        varchar(255) password_hash "NOT NULL"
+        varchar(255) password_hash "NULL"
         varchar(30) telefono "NULL"
         varchar(1024) avatar_url "NULL"
         ENUM estado "NOT NULL"
@@ -307,6 +314,7 @@ erDiagram
     sesiones |o..o{ envios_comunicacion : "fk_envio_sesion"
     usuarios ||..o{ envios_comunicacion : "fk_envio_usuario"
     usuarios ||..o| estudiantes : "fk_estudiante_usuario"
+    usuarios ||..o{ identidades_externas : "fk_identidad_usuario"
     usuarios ||..o{ materiales_sesion : "fk_material_autor"
     sesiones ||..o{ materiales_sesion : "fk_material_sesion"
     usuarios ||..o{ mediciones_academicas : "fk_medicion_autor"

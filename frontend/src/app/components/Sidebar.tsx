@@ -1,6 +1,9 @@
+import type { UsuarioSesion } from '../tipos/autenticacion';
+import imagenCoordinacion from '../../assets/secretary.png';
 import { Home, UserCheck, FileText, Bell, BookOpen,LogOut } from 'lucide-react';
 
 interface SidebarProps {
+  usuario: UsuarioSesion;
   onLogout: () => void;
   activeSection: string;
   onSectionChange: (section: string) => void;
@@ -12,7 +15,7 @@ export function Sidebar({
 
   onSectionChange,
 
-  onLogout
+  onLogout, usuario
 
 }: SidebarProps) {
   const menuItems = [
@@ -61,7 +64,7 @@ export function Sidebar({
   <div className="flex items-center gap-2 mb-2">
 
     <img
-      src="/secretary.png"
+      src={usuario.avatarUrl || imagenCoordinacion}
       alt="Avatar"
       className="w-12 h-12 rounded-full object-cover"
     />
@@ -69,8 +72,9 @@ export function Sidebar({
     <div>
 
       <h2 className="font-semibold text-white">
-        Coordinadora
+        {usuario.nombre}
       </h2>
+      <p className="correo-sesion">{usuario.correo}</p>
 
     </div>
 

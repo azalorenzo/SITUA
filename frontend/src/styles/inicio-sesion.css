@@ -120,3 +120,27 @@
   .boton-google-acceso { min-height: 40px; }
   .registro-acceso { margin-top: 12px; font-size: 11px; }
 }
+
+.errores-campo-acceso { margin: 0; padding: 0; list-style: none; font-size: 11px; line-height: 1.5; color: #b33c46; }
+.campo-acceso input[aria-invalid="true"] { border-color: #c66b72; }
+.mensaje-acceso { margin: 12px 0 0; color: #a73440; font-size: 12px; line-height: 1.5; }
+.mensaje-acceso:empty { display: none; }
+.aviso-acceso { margin: 14px 0 0; color: #52716d; font-size: 12px; text-align: center; line-height: 1.5; }
+.boton-principal-acceso { display: flex; align-items: center; justify-content: center; gap: 9px; }
+.boton-principal-acceso:disabled { cursor: wait; opacity: .75; }
+.campo-acceso input:disabled { background: #f8fbfa; }
+.giro-acceso { width: 18px; height: 18px; animation: giro-acceso 1s linear infinite; }
+.cargando-sesion { color: #fff; font-size: 16px; }
+.correo-sesion { margin-top: 4px; font-size: 11px; color: #d3f4ee; overflow-wrap: anywhere; }
+@keyframes giro-acceso { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .giro-acceso { animation: none; } }
+
+.formulario-registro .campos-acceso { gap: 12px; }
+.ayuda-registro { color: #52716d; font-size: 11px; line-height: 1.5; margin: 12px 0; }
+.completar-google { display: grid; gap: 10px; margin-top: 16px; }
+.completar-google .boton-principal-acceso { margin-top: 0; }
+.cancelar-google { justify-self: center; font-size: 12px; }
+.contenedor-google { min-height: 44px; display: flex; justify-content: center; }
+.contenedor-google[inert] { opacity: .55; }
+.boton-google-acceso:disabled { cursor: default; opacity: .65; }
+.letra-google { font-size: 20px; font-weight: 700; color: #4285f4; }

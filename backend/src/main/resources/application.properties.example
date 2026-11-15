@@ -19,3 +19,11 @@ spring.flyway.validate-on-migrate=true
 spring.flyway.validate-migration-naming=true
 spring.flyway.baseline-on-migrate=false
 spring.flyway.clean-disabled=true
+
+# La clave real solo se guarda en el entorno de cada computadora.
+seguridad.jwt.clave=${JWT_CLAVE}
+seguridad.jwt.minutos-vigencia=${JWT_MINUTOS_VIGENCIA:15}
+seguridad.origenes-permitidos=${ORIGENES_PERMITIDOS:http://localhost:5173,http://127.0.0.1:5173}
+
+# Google se habilita cuando cada entorno tiene un ID de cliente válido.
+seguridad.google.cliente-id=${GOOGLE_CLIENTE_ID:}

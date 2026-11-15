@@ -1,13 +1,13 @@
 # Diagrama ER físico de tutoria
 
-Extraído directamente de information_schema en MySQL 26.10.0, el 11 de noviembre de 2026. Incluye **27 tablas, 236 columnas, 45 claves foráneas y 37 CHECK**. No contiene filas ni contraseñas. Las 4 vistas se documentan aparte: no son tablas adicionales.
+Extraído directamente de information_schema en MySQL 26.10.0. Incluye **28 tablas, 241 columnas, 46 claves foráneas y 39 CHECK**. No contiene filas ni contraseñas. Las 4 vistas se documentan aparte: no son tablas adicionales.
 
 - tutoria-er.svg: diagrama completo, ampliable.
 - tutoria-er.mmd: fuente Mermaid editable.
 - tutoria-er.dot: fuente Graphviz editable.
 - estructura.json: metadatos extraídos del motor.
 
-La tabla técnica flyway_schema_history se excluye del dominio: existen 28 tablas físicas en total, de las cuales 27 son funcionales.
+La tabla técnica flyway_schema_history se excluye del dominio: existen 29 tablas físicas en total, de las cuales 28 son funcionales.
 
 ## Lectura del modelo
 
@@ -15,7 +15,7 @@ Todas las columnas están representadas con su tipo físico y nulabilidad. PK in
 
 Las cardinalidades se derivan de las restricciones reales, no de suposiciones funcionales. Ninguna FK obliga a un padre a tener hijos; por ello el mínimo de hijos es siempre cero. Un FK con columnas NULL permite que el vínculo no exista. Los extremos del SVG indican cuántos padres corresponden a un hijo (1 o 0..1) y cuántos hijos a un padre (0..N o 0..1). En Mermaid, la línea continua identifica FK incorporada en la PK del hijo, y la discontinua relaciones no identificadoras.
 
-Una FK compuesta corresponde a una sola relación. En SVG las líneas conectan tablas; al pasar el cursor se muestran todas las columnas de la FK. La lista siguiente es la definición completa de las 45 relaciones.
+Una FK compuesta corresponde a una sola relación. En SVG las líneas conectan tablas; al pasar el cursor se muestran todas las columnas de la FK. La lista siguiente es la definición completa de las 46 relaciones.
 
 ## Relaciones exactas
 
@@ -38,6 +38,7 @@ Una FK compuesta corresponde a una sola relación. En SVG las líneas conectan t
 | fk_envio_sesion | envios_comunicacion (sesion_id) | sesiones (id) | 0..1 | 0..N |
 | fk_envio_usuario | envios_comunicacion (usuario_id) | usuarios (id) | 1 | 0..N |
 | fk_estudiante_usuario | estudiantes (usuario_id) | usuarios (id) | 1 | 0..1 |
+| fk_identidad_usuario | identidades_externas (usuario_id) | usuarios (id) | 1 | 0..N |
 | fk_material_autor | materiales_sesion (agregado_por) | usuarios (id) | 1 | 0..N |
 | fk_material_sesion | materiales_sesion (sesion_id) | sesiones (id) | 1 | 0..N |
 | fk_medicion_autor | mediciones_academicas (registrado_por) | usuarios (id) | 1 | 0..N |
@@ -314,6 +315,26 @@ CHECK ck_envio_idempotencia: `(char_length(trim(`clave_idempotencia`)) > 0)`.
 - uq_estudiante_usuario: UNIQUE (usuario_id).
 
 CHECK ck_estudiante_matricula: `(char_length(trim(`matricula`)) > 0)`.
+
+### identidades_externas
+
+| Columna | Tipo | Clave | NULL | Default | Extra / expresión |
+|---|---|---|---|---|---|
+| id | bigint unsigned | PK | NO | NULL | auto_increment |
+| usuario_id | bigint unsigned | FK | NO | NULL |  |
+| proveedor | varchar(20) |  | NO | NULL |  |
+| identificador_externo | varchar(255) |  | NO | NULL |  |
+| creado_en | datetime(6) |  | NO | CURRENT_TIMESTAMP(6) | DEFAULT_GENERATED |
+
+Índices:
+
+- PRIMARY: UNIQUE (id).
+- uq_identidad_proveedor: UNIQUE (proveedor, identificador_externo).
+- uq_usuario_proveedor: UNIQUE (usuario_id, proveedor).
+
+CHECK ck_identidad_identificador: `(char_length(trim(`identificador_externo`)) > 0)`.
+
+CHECK ck_identidad_proveedor: `(`proveedor` = _utf8mb4\'google\')`.
 
 ### materiales_sesion
 
@@ -668,7 +689,7 @@ CHECK ck_revocacion_vencimiento: `(`vence_en` > `revocado_en`)`.
 | id | bigint unsigned | PK | NO | NULL | auto_increment |
 | nombre | varchar(160) |  | NO | NULL |  |
 | correo | varchar(254) | UK | NO | NULL |  |
-| password_hash | varchar(255) |  | NO | NULL |  |
+| password_hash | varchar(255) |  | YES | NULL |  |
 | telefono | varchar(30) |  | YES | NULL |  |
 | avatar_url | varchar(1024) |  | YES | NULL |  |
 | estado | enum('activo','inactivo') |  | NO | activo |  |

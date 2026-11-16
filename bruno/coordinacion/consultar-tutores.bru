@@ -1,0 +1,28 @@
+meta {
+  name: Consultar tutores desde coordinación
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{url_api}}/coordinacion/tutores
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{token_coordinacion}}
+}
+
+tests {
+  test("Devuelve la lista sin contraseñas", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.be.an("array");
+    for (const registro of res.getBody()) {
+      expect(registro).to.have.property("id");
+      expect(registro).to.have.property("correo");
+      expect(registro).not.to.have.property("password_hash");
+      expect(registro).not.to.have.property("contrasenaHash");
+    }
+  });
+}

@@ -1,0 +1,30 @@
+meta {
+  name: Iniciar sesión de coordinación
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{url_api}}/autenticacion/iniciar-sesion
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {"correo":"coordinacion@demo.example","contrasena":"CoordDemo!2026"}
+}
+
+script:post-response {
+  if (res.getStatus() === 200) bru.setVar("token_coordinacion", res.getBody().token);
+}
+
+tests {
+  test("Obtiene acceso de coordinación", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().usuario.roles).to.include("coordinador");
+  });
+}

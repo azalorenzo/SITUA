@@ -55,7 +55,7 @@ Cuerpo del login, usando una cuenta del seed:
 
 La validación exige un correo válido y contraseña con mínimo 8 caracteres, una mayúscula, un número y un carácter especial. Se respeta el límite de BCrypt; React también señala contraseñas demasiado largas. El backend compara el hash, revisa que la cuenta esté activa y tenga roles, y devuelve un DTO sin contraseña ni hash. Un correo inexistente y una contraseña incorrecta generan el mismo mensaje.
 
-El JWT se firma con HS256 e incluye identificador de usuario, roles, emisor, audiencia, identificador único, emisión y vencimiento. Spring Security comprueba firma, emisor, audiencia y caducidad. Las rutas de coordinación se reservan a coordinación; las de tutor y estudiante permiten su rol y coordinación. Actualmente esos módulos aún no tienen endpoints de negocio. La consulta de sesión además comprueba el estado actual del usuario en MySQL.
+El JWT se firma con HS256 e incluye identificador de usuario, roles, emisor, audiencia, identificador único, emisión y vencimiento. Spring Security comprueba firma, emisor, audiencia y caducidad. Las rutas de coordinación se reservan a coordinación; las de tutor y estudiante permiten su rol y coordinación. Coordinación ya tiene endpoints de consulta de tutores y estudiantes; las demás operaciones de negocio siguen pendientes. La consulta de sesión además comprueba el estado actual del usuario en MySQL.
 
 React abre la pantalla de coordinación, tutor o estudiante según los roles devueltos por el servidor; si hay varios, prioriza coordinación y después tutor. Muestra el nombre y correo auténticos, bloquea el botón durante la solicitud y presenta errores debajo de los campos o un mensaje general ante fallos de acceso/red. Las peticiones protegidas usan `Authorization`.
 
@@ -100,14 +100,33 @@ V3 agrega `identidades_externas` y permite `usuarios.password_hash` nulo para cu
 
 ### Pruebas de este avance
 
-- 52 pruebas del backend: autenticación, JWT, roles, validación, registro, vinculación y verificación criptográfica de Google. Los datos temporales se revierten.
-- 6 peticiones y pruebas Bruno ejecutadas contra la API real: login, sesión con JWT, contraseña incorrecta, campos inválidos, falta de token y acceso de rol no permitido.
+- 61 pruebas del backend: autenticación, JWT, roles, validación, registro, vinculación y verificación criptográfica de Google, y consultas de coordinación. Los datos temporales se revierten.
+- 9 peticiones y pruebas Bruno ejecutadas contra la API real: autenticación, permisos y consultas de tutores y estudiantes desde coordinación.
 - 10 comprobaciones adicionales de registro real en navegador: campos, confirmación, duplicados, creación de estudiante, restauración de sesión y móvil. La cuenta de prueba se eliminó al terminar.
 - 25 comprobaciones de navegador del login: acceso real de los tres perfiles, errores, carga, recarga, almacenamiento según recordar, salida local, token alterado y móvil sin desbordamiento.
 
-La colección versionada está en `bruno`. Abrir esa carpeta en Bruno y ejecutar las peticiones en su orden; el token se conserva solo como variable de ejecución. La ruta de coordinación utilizada en la prueba de 403 no es un endpoint de negocio: comprueba que el filtro bloquee al estudiante antes de buscar un controlador.
+La colección versionada está en `bruno`. Abrir esa carpeta en Bruno y ejecutar las peticiones en su orden; el token se conserva solo como variable de ejecución. La prueba de 403 comprueba que el filtro bloquee al estudiante en las rutas de coordinación.
 
 También se puede ejecutar la colección desde esa carpeta con `npx --package @usebruno/cli bru run`. No guardar tokens reales en los archivos versionados. Las pruebas Java se ejecutan con `./mvnw.cmd test` desde `backend`.
+
+## Consultas de coordinación
+
+El backend permite consultar los tutores y estudiantes reales de MySQL. Las pantallas de coordinación conservan sus datos de demostración hasta el siguiente avance de frontend.
+
+| Método | Ruta | Permiso |
+|---|---|---|
+| GET | `/api/coordinacion/tutores` | JWT con rol `coordinador` |
+| GET | `/api/coordinacion/estudiantes` | JWT con rol `coordinador` |
+
+Las respuestas son listas JSON, ordenadas por nombre e identificador y sin paginación en este avance. No contienen contraseñas ni hashes. Incluyen cuentas activas e inactivas con su `estado`; una lista sin registros devuelve `[]`. Sin token se recibe 401; con rol tutor o estudiante, 403. Se usa `Cache-Control: no-store`.
+
+Los tutores incluyen `id` (del perfil tutor), `usuarioId`, `nombre`, `correo`, `telefono`, `avatarUrl`, `estado`, `departamentoId` y `departamento`.
+
+Los estudiantes incluyen `id` (del perfil estudiante), `usuarioId`, `nombre`, `correo`, `telefono`, `avatarUrl`, `estado`, `matricula`, `periodoId`, `periodo`, `carrera`, `semestre`, `promedio` y `nivelRiesgo`. Se elige el periodo con fecha de inicio más reciente de cada estudiante, aunque esté cerrado; los empates se resuelven por identificador de periodo. La medición más reciente se obtiene de la vista existente, con desempate por identificador. Los estudiantes sin expediente también aparecen, con campos académicos nulos. Sin medición, promedio y riesgo son nulos; no se inventa un valor de riesgo.
+
+No se modificaron tablas, migraciones ni entidades compartidas con el módulo de estudiante. Los archivos nuevos de consulta están separados en controlador, servicio, repositorio y respuestas de coordinación.
+
+Para probar en Bruno, ejecutar primero `coordinacion/iniciar-sesion.bru` y después las consultas de esa carpeta. Se utilizan las cuentas del seed y una variable temporal `token_coordinacion`.
 
 ## Conexión del backend con MySQL
 

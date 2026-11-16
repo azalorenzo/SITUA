@@ -4,7 +4,7 @@ Proyecto con frontend React/Vite, backend Spring Boot (Java) y MySQL. El inicio 
 
 ## Inicio de sesión conectado
 
-El formulario de React está conectado al backend. El registro crea cuentas de estudiante y abre su sesión. Google tiene la integración preparada, pero permanece desactivado hasta configurar un ID de cliente. La recuperación de contraseña sigue pendiente.
+El formulario de React está conectado al backend. El registro crea cuentas de estudiante y abre su sesión. El acceso con Google ya funciona en el entorno local configurado. En nuevas instalaciones se activa al configurar el ID de cliente y autorizar los orígenes en Google Cloud. La recuperación de contraseña sigue pendiente.
 
 ### Configuración y arranque
 
@@ -73,7 +73,7 @@ El enlace **Regístrate** solicita nombre, matrícula, correo, contraseña y con
 {"nombre":"Estudiante nuevo","matricula":"ALUMNO-100","correo":"nuevo@example.com","contrasena":"MiClave!123","confirmarContrasena":"MiClave!123"}
 ```
 
-### Preparar el acceso con Google
+### Acceso con Google
 
 La integración usa Google Identity Services y un ID de cliente OAuth de tipo **Aplicación web**. No necesita secreto de cliente para este flujo. Crear el cliente siguiendo la [guía oficial de Google](https://developers.google.com/identity/gsi/web/guides/get-google-api-clientid) y autorizar como orígenes JavaScript `http://localhost:5173` y `http://127.0.0.1:5173`. Para despliegue, agregar el origen HTTPS real.
 
@@ -94,7 +94,7 @@ El frontend manda `credencial` y `comprobacion` a `/api/autenticacion/google`. E
 - Correo ya registrado: pide la contraseña actual del sistema antes de vincular. Conserva sus roles. Las siguientes entradas usan la identidad vinculada.
 - Cuenta inactiva: el acceso se rechaza aunque Google sea válido.
 
-Las pruebas verifican firmas RSA y los casos de creación/vinculación con datos controlados. **La entrada con una cuenta real de Google queda pendiente hasta contar con el ID de cliente.**
+Las pruebas verifican firmas RSA y los casos de creación/vinculación con datos controlados. El usuario confirmó el acceso correcto con una cuenta real de Google en el entorno local.
 
 V3 agrega `identidades_externas` y permite `usuarios.password_hash` nulo para cuentas exclusivas de Google. No altera las contraseñas existentes. El diagrama ER y sus metadatos se regeneraron desde el motor.
 

@@ -19,11 +19,6 @@ public class ControladorConsultasCoordinacion {
         this.consultas = consultas;
     }
 
-    @GetMapping("/tutores")
-    public ResponseEntity<List<RespuestaTutorCoordinacion>> consultarTutores() {
-        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(consultas.consultarTutores());
-    }
-
     @GetMapping("/estudiantes")
     public ResponseEntity<List<RespuestaEstudianteCoordinacion>> consultarEstudiantes() {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(consultas.consultarEstudiantes());

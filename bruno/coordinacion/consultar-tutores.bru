@@ -17,8 +17,9 @@ headers {
 tests {
   test("Devuelve la lista sin contraseñas", function () {
     expect(res.getStatus()).to.equal(200);
-    expect(res.getBody()).to.be.an("array");
-    for (const registro of res.getBody()) {
+    expect(res.getBody().contenido).to.be.an("array");
+    expect(res.getBody().contenido.length).to.be.at.most(5);
+    for (const registro of res.getBody().contenido) {
       expect(registro).to.have.property("id");
       expect(registro).to.have.property("correo");
       expect(registro).not.to.have.property("password_hash");

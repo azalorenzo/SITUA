@@ -1,44 +1,52 @@
-import { useState } from 'react';
-import { consultarTutores } from '../servicios/coordinacion';
-import { usarConsultaCoordinacion, EstadoConsulta, BusquedaCoordinacion, InicialesPersona, normalizarBusqueda, estiloCelda, estiloTarjeta } from './ConsultaCoordinacion';
+import { useEffect,useState } from 'react';
+import { Plus,Pencil,UserRoundX,UserRoundCheck,RefreshCw,Search,ChevronLeft,ChevronRight } from 'lucide-react';
+import { consultarDepartamentos } from '../servicios/tutores';
+import { usarPaginaTutores } from './usarPaginaTutores';
+import { usarConsultaCoordinacion,EstadoConsulta,InicialesPersona } from './ConsultaCoordinacion';
+import { FormularioTutor } from './FormularioTutor';
+import type { OperacionTutor } from './FormularioTutor';
+import '../../styles/tutores.css';
 
 function ListaTutoresCoordinacion() {
-  const { datos: tutores, cargando, error, actualizar } = usarConsultaCoordinacion(consultarTutores);
-  const [busqueda, cambiarBusqueda] = useState('');
-  const [estado, cambiarEstado] = useState('todos');
-  const termino = normalizarBusqueda(busqueda);
-  const visibles = tutores.filter(tutor => (estado === 'todos' || tutor.estado === estado)
-    && normalizarBusqueda(`${tutor.nombre} ${tutor.correo} ${tutor.departamento}`).includes(termino));
-
-  return <section className="space-y-6" aria-labelledby="titulo-tutores">
-    <div className="flex flex-wrap justify-between items-center gap-3">
-      <div><h2 id="titulo-tutores" className="font-semibold mb-1">Gestión de Tutores</h2><p className="text-sm text-[#53716E]">Consulta los tutores y sus datos de contacto</p></div>
-      <button type="button" onClick={actualizar} disabled={cargando} className="px-4 py-2 rounded-lg border border-[#DCE3EA] disabled:opacity-50">Actualizar</button>
+  const [busqueda,cambiarBusqueda]=useState('');
+  const [busquedaAplicada,cambiarBusquedaAplicada]=useState('');
+  const [estado,cambiarEstado]=useState('todos');
+  const [departamentoId,cambiarDepartamentoId]=useState('');
+  const [pagina,cambiarPagina]=useState(1);
+  const [operacion,cambiarOperacion]=useState<OperacionTutor|null>(null);
+  const [aviso,cambiarAviso]=useState('');
+  const tutores=usarPaginaTutores({pagina,tamano:5,busqueda:busquedaAplicada,estado,departamentoId});
+  const departamentos=usarConsultaCoordinacion(consultarDepartamentos);
+  useEffect(()=>{
+    if(busqueda===busquedaAplicada)return;
+    const espera=window.setTimeout(()=>{cambiarBusquedaAplicada(busqueda);cambiarPagina(1);},300);
+    return ()=>window.clearTimeout(espera);
+  },[busqueda,busquedaAplicada]);
+  const datos=tutores.datos;
+  const filas=tutores.cargando||tutores.error?[]:datos?.contenido||[];
+  const paginaActual=datos?.pagina||1;
+  const paginas=datos?.totalPaginas||0;
+  const total=datos?.totalRegistros||0;
+  function actualizar(){tutores.actualizar();departamentos.actualizar();}
+  return <section className="pagina-tutores" aria-labelledby="titulo-tutores">
+    <header className="encabezado-tutores"><div><h2 id="titulo-tutores">Gestión de Tutores</h2><p>Administra las cuentas de tutores y sus departamentos</p></div><div className="botones-encabezado-tutores"><button type="button" className="boton-cancelar-tutor" disabled={tutores.cargando} onClick={actualizar}><RefreshCw aria-hidden="true"/>Actualizar</button><button type="button" className="boton-guardar-tutor" disabled={departamentos.cargando||Boolean(departamentos.error)||!departamentos.datos.some(departamento=>departamento.activo)} onClick={()=>cambiarOperacion({tipo:'crear'})}><Plus aria-hidden="true"/>Agregar tutor</button></div></header>
+    {aviso&&<p role="status" className="aviso-tutores">{aviso}</p>}
+    <div className="resumen-tutores">{[['Total de tutores',datos?.resumen.total],['Cuentas activas',datos?.resumen.activos],['Cuentas inactivas',datos?.resumen.inactivos]].map(([titulo,valor])=><div key={titulo}><p>{titulo}</p><strong>{tutores.cargando||tutores.error?'—':valor??'—'}</strong></div>)}</div>
+    <div className="filtros-tutores"><div className="busqueda-tutores"><Search aria-hidden="true"/><input type="search" aria-label="Buscar tutor" placeholder="Buscar nombre, correo o departamento" maxLength={160} value={busqueda} onChange={evento=>cambiarBusqueda(evento.target.value)}/></div>
+      <div><label htmlFor="filtro-departamento-tutor">Departamento</label><select id="filtro-departamento-tutor" value={departamentoId} disabled={departamentos.cargando||Boolean(departamentos.error)} onChange={evento=>{cambiarDepartamentoId(evento.target.value);cambiarPagina(1);}}><option value="">Todos los departamentos</option>{departamentos.datos.map(departamento=><option key={departamento.id} value={departamento.id}>{departamento.nombre}{departamento.activo?'':' (inactivo)'}</option>)}</select></div>
+      <div><label htmlFor="filtro-estado-tutor">Estado de la cuenta</label><select id="filtro-estado-tutor" value={estado} onChange={evento=>{cambiarEstado(evento.target.value);cambiarPagina(1);}}><option value="todos">Todas las cuentas</option><option value="activo">Activas</option><option value="inactivo">Inactivas</option></select></div>
     </div>
-    {!cargando && !error && <div className="grid sm:grid-cols-3 gap-4">
-      <div className={estiloTarjeta}><p className="text-sm text-[#53716E]">Total de tutores</p><p className="font-semibold">{tutores.length}</p></div>
-      <div className={estiloTarjeta}><p className="text-sm text-[#53716E]">Cuentas activas</p><p className="font-semibold">{tutores.filter(tutor => tutor.estado === 'activo').length}</p></div>
-      <div className={estiloTarjeta}><p className="text-sm text-[#53716E]">Cuentas inactivas</p><p className="font-semibold">{tutores.filter(tutor => tutor.estado === 'inactivo').length}</p></div>
-    </div>}
-    <div className="bg-white rounded-lg shadow-sm" aria-busy={cargando}>
-      <div className="p-6 border-b border-[#DCE3EA] flex flex-wrap justify-between items-center gap-4">
-        <h3 className="font-semibold">Lista de tutores</h3>
-        <BusquedaCoordinacion tipo="tutor" busqueda={busqueda} alBuscar={cambiarBusqueda} estado={estado} alCambiarEstado={cambiarEstado} />
-      </div>
-      <EstadoConsulta cargando={cargando} error={error} alReintentar={actualizar} />
-      {!cargando && !error && <>
-        <p role="status" className="px-6 pt-4 text-sm text-[#53716E]">{visibles.length} de {tutores.length} tutores</p>
-        {visibles.length === 0 ? <p className="p-6 text-[#53716E]">{tutores.length === 0 ? 'No hay tutores registrados.' : 'No se encontraron tutores con esos criterios.'}</p>
-          : <div className="overflow-x-auto"><table className="w-full" aria-label="Lista de tutores"><thead className="bg-[#F5F7FA] border-b border-[#DCE3EA]"><tr>
-            {['Tutor', 'Departamento', 'Teléfono', 'Estado'].map(titulo => <th scope="col" key={titulo} className={estiloCelda}>{titulo}</th>)}
-          </tr></thead><tbody>{visibles.map(tutor => <tr key={tutor.id} className="border-b border-[#DCE3EA] hover:bg-[#F5F7FA]">
-            <td className={estiloCelda}><div className="flex items-center gap-3"><InicialesPersona nombre={tutor.nombre} /><div><p className="font-medium">{tutor.nombre}</p><p className="text-xs text-[#53716E]">{tutor.correo}</p></div></div></td>
-            <td className={estiloCelda}>{tutor.departamento}</td><td className={estiloCelda}>{tutor.telefono || 'Sin teléfono'}</td>
-            <td className={estiloCelda}><span className={tutor.estado === 'activo' ? 'text-[#227F78]' : 'text-[#53716E]'}>{tutor.estado === 'activo' ? 'Activa' : 'Inactiva'}</span></td>
-          </tr>)}</tbody></table></div>}
-      </>}
+    {departamentos.error&&<EstadoConsulta cargando={false} error={departamentos.error} alReintentar={departamentos.actualizar}/>}
+    <div className="tabla-contenedor-tutores" aria-busy={tutores.cargando}>
+      <EstadoConsulta cargando={tutores.cargando} error={tutores.error} alReintentar={tutores.actualizar}/>
+      {filas.length>0&&<table aria-label="Lista de tutores"><thead><tr>{['Tutor','Departamento','Teléfono','Estado','Acciones'].map(titulo=><th scope="col" key={titulo}>{titulo}</th>)}</tr></thead><tbody>{filas.map(tutor=><tr key={tutor.id}>
+        <td><div className="persona-tabla-tutores"><InicialesPersona nombre={tutor.nombre}/><div><p>{tutor.nombre}</p><small>{tutor.correo}</small></div></div></td><td>{tutor.departamento}</td><td>{tutor.telefono||'Sin teléfono'}</td><td><span className={`estado-cuenta-tutor ${tutor.estado}`}>{tutor.estado==='activo'?'Activa':'Inactiva'}</span></td>
+        <td><div className="acciones-tabla-tutores"><button type="button" title="Editar tutor" aria-label="Editar tutor" disabled={departamentos.cargando||Boolean(departamentos.error)} onClick={()=>cambiarOperacion({tipo:'editar',tutor})}><Pencil aria-hidden="true"/></button><button type="button" className={tutor.estado==='activo'?'accion-desactivar-tutor':''} title={tutor.estado==='activo'?'Desactivar tutor':'Reactivar tutor'} aria-label={tutor.estado==='activo'?'Desactivar tutor':'Reactivar tutor'} onClick={()=>cambiarOperacion({tipo:'estado',tutor})}>{tutor.estado==='activo'?<UserRoundX aria-hidden="true"/>:<UserRoundCheck aria-hidden="true"/>}</button></div></td>
+      </tr>)}</tbody></table>}
+      {!tutores.cargando&&!tutores.error&&!filas.length&&<p className="lista-vacia-tutores">No hay tutores que coincidan con los filtros.</p>}
     </div>
+    {!tutores.cargando&&!tutores.error&&<div className="pie-tabla-tutores"><p role="status">Mostrando {total?(paginaActual-1)*5+1:0}–{Math.min(paginaActual*5,total)} de {total} tutores</p><nav aria-label="Paginación de tutores"><button type="button" disabled={paginaActual<=1} onClick={()=>cambiarPagina(paginaActual-1)}><ChevronLeft aria-hidden="true"/>Anterior</button>{Array.from({length:paginas},(_,indice)=>indice+1).map(numero=><button type="button" key={numero} aria-label={`Página ${numero}`} aria-current={numero===paginaActual?'page':undefined} onClick={()=>cambiarPagina(numero)}>{numero}</button>)}<button type="button" disabled={!paginas||paginaActual>=paginas} onClick={()=>cambiarPagina(paginaActual+1)}>Siguiente<ChevronRight aria-hidden="true"/></button></nav></div>}
+    {operacion&&<FormularioTutor operacion={operacion} departamentos={departamentos.datos} alCerrar={()=>cambiarOperacion(null)} alGuardar={mensaje=>{cambiarOperacion(null);cambiarAviso(mensaje);actualizar();}}/>}
   </section>;
 }
-
 export { ListaTutoresCoordinacion as TutorsManagementView };

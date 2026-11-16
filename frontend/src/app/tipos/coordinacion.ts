@@ -22,3 +22,14 @@ export interface EstudianteCoordinacion extends PersonaCoordinacion {
   promedio: number | null;
   nivelRiesgo: 'sin_riesgo' | 'bajo' | 'medio' | 'alto' | null;
 }
+
+export interface Departamento {
+  id: number; nombre: string; activo: boolean;
+}
+export interface FiltrosTutores {
+  pagina: number; tamano: number; busqueda: string; estado: string; departamentoId: string;
+}
+export interface PaginaTutores {
+  contenido: TutorCoordinacion[]; pagina: number; tamano: number; totalRegistros: number; totalPaginas: number;
+  resumen: { total: number; activos: number; inactivos: number };
+}

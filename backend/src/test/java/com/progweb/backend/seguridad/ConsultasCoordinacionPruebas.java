@@ -69,7 +69,7 @@ class ConsultasCoordinacionPruebas {
         String respuesta = cliente.perform(get("/api/coordinacion/" + recurso)
                 .header("Authorization", "Bearer " + token("coordinador")))
             .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"))
-            .andExpect(jsonPath("$").isArray()).andReturn().getResponse().getContentAsString();
+            .andExpect(jsonPath(recurso.equals("tutores")?"$.contenido":"$").isArray()).andReturn().getResponse().getContentAsString();
         assertThat(respuesta).doesNotContain("password_hash", "contrasenaHash", "passwordHash", "$2a$", "$2y$");
     }
 

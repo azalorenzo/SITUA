@@ -100,8 +100,8 @@ V3 agrega `identidades_externas` y permite `usuarios.password_hash` nulo para cu
 
 ### Pruebas de este avance
 
-- 84 pruebas del backend: autenticación, JWT, roles, validación, registro, vinculación y verificación criptográfica de Google, consultas de coordinación y administración de asignaciones. Los datos temporales se revierten.
-- 11 peticiones y pruebas Bruno ejecutadas contra la API real: autenticación, permisos y consultas de tutores, estudiantes, periodos y asignaciones desde coordinación.
+- 99 pruebas del backend: autenticación, JWT, roles, validación, registro, vinculación y verificación criptográfica de Google, consultas de coordinación y administración de asignaciones. Los datos temporales se revierten.
+- 13 peticiones y pruebas Bruno ejecutadas contra la API real: autenticación, permisos y consultas de tutores, estudiantes, periodos y asignaciones desde coordinación.
 - 10 comprobaciones adicionales de registro real en navegador: campos, confirmación, duplicados, creación de estudiante, restauración de sesión y móvil. La cuenta de prueba se eliminó al terminar.
 - 25 comprobaciones de navegador del login: acceso real de los tres perfiles, errores, carga, recarga, almacenamiento según recordar, salida local, token alterado y móvil sin desbordamiento.
 
@@ -115,10 +115,10 @@ El backend y las pantallas de coordinación permiten consultar los tutores y est
 
 | Método | Ruta | Permiso |
 |---|---|---|
-| GET | `/api/coordinacion/tutores` | JWT con rol `coordinador` |
+| GET | `/api/coordinacion/tutores` | JWT con rol `coordinador`; respuesta paginada |
 | GET | `/api/coordinacion/estudiantes` | JWT con rol `coordinador` |
 
-Las respuestas son listas JSON, ordenadas por nombre e identificador y sin paginación en este avance. No contienen contraseñas ni hashes. Incluyen cuentas activas e inactivas con su `estado`; una lista sin registros devuelve `[]`. Sin token se recibe 401; con rol tutor o estudiante, 403. Se usa `Cache-Control: no-store`.
+Estudiantes devuelve una lista JSON completa. Tutores devuelve una respuesta paginada; ambas consultas se ordenan por nombre e identificador. No contienen contraseñas ni hashes. Incluyen cuentas activas e inactivas con su `estado`; Estudiantes sin registros devuelve `[]`; Tutores devuelve `contenido: []` y totales en cero. Sin token se recibe 401; con rol tutor o estudiante, 403. Se usa `Cache-Control: no-store`.
 
 Los tutores incluyen `id` (del perfil tutor), `usuarioId`, `nombre`, `correo`, `telefono`, `avatarUrl`, `estado`, `departamentoId` y `departamento`.
 
@@ -132,11 +132,11 @@ Para probar en Bruno, ejecutar primero `coordinacion/iniciar-sesion.bru` y despu
 
 Las pantallas de tutores y estudiantes consumen las rutas anteriores con el JWT de la sesión. Muestran carga, error con reintento, lista vacía y búsqueda sin resultados. El botón Actualizar vuelve a consultar el servidor. Al cambiar de pantalla se cancela la consulta pendiente para evitar mostrar una respuesta anterior.
 
-La búsqueda se aplica a los datos recibidos, sin distinguir mayúsculas ni acentos: nombre, correo y departamento en tutores; nombre, correo, matrícula y carrera en estudiantes. El selector filtra por estado de la cuenta. Las tarjetas y gráficos resumen toda la lista cargada; el contador de la tabla indica cuántos registros coinciden con la búsqueda y el filtro.
+En estudiantes, la búsqueda se aplica a los datos recibidos sin distinguir mayúsculas ni acentos, por nombre, correo, matrícula y carrera. En tutores, búsqueda y filtros se ejecutan en MySQL y se reciben solo los registros de la página solicitada. El selector filtra por estado de la cuenta. Las tarjetas y gráficos resumen toda la lista cargada; el contador de la tabla indica cuántos registros coinciden con la búsqueda y el filtro.
 
 Las estadísticas académicas proceden del expediente más reciente de cada estudiante. El promedio general usa únicamente promedios disponibles, sin convertir ausencias en cero. Riesgo nulo se muestra como Sin evaluación. Los registros sin semestre se cuentan aparte. Los periodos pueden ser distintos y se indica en la pantalla. La cifra de horas ficticias fue retirada porque no forma parte de estas consultas.
 
-Este avance es de consulta: se retiraron los formularios que solo simulaban altas, cambios o bajas en memoria. Las operaciones de escritura se implementarán por separado. Las vistas del estudiante y del tutor no se modificaron.
+Las acciones de tutores ya crean, editan y cambian el estado de cuentas en el servidor. Estudiantes continúa como consulta. Las vistas del estudiante y del tutor no se modificaron.
 
 Verificación del frontend: compilación de producción y 22 comprobaciones de navegador, con consultas reales para cotejar filas y JWT; respuestas controladas para fallos de red, listas vacías, reintentos y campos académicos nulos o con promedio cero. No se modificaron registros de MySQL durante estas pruebas.
 
@@ -178,6 +178,30 @@ La respuesta incluye `contenido`, `pagina`, `tamano`, `totalRegistros`, `totalPa
 React solo recibe la página solicitada y muestra botones para todos los índices disponibles, además de Anterior y Siguiente. Al cambiar filtros vuelve a la primera página. La búsqueda espera brevemente al terminar de escribir y cancela consultas anteriores. Cero resultados devuelve `contenido: []`, `totalRegistros: 0`, `totalPaginas: 0` y `pagina: 1`; no se dibujan índices inexistentes. Si la página solicitada dejó de existir, el servidor devuelve la última disponible.
 
 La exportación utiliza `/api/coordinacion/asignaciones/exportar` con los mismos filtros, sin paginación, únicamente al pulsar Exportar. No se descarga todo el historial al abrir la pantalla. La colección Bruno se actualizó al contrato paginado. Se comprobaron 84 pruebas de backend, 13 casos de navegador de páginas, filtros, exportación y reintentos, y 11 peticiones Bruno. No se modificaron tablas ni migraciones.
+
+## Gestión de tutores
+
+La pantalla de Tutores permite agregar, editar, desactivar y reactivar cuentas. El formulario de alta utiliza nombre, correo, contraseña y departamento; al editar solo se cambian nombre, correo y departamento. No se muestran hashes ni contraseñas existentes ni se permite escoger roles. La cuenta nueva recibe únicamente el rol tutor y puede iniciar sesión al terminar el alta.
+
+| Método | Ruta | Función |
+|---|---|---|
+| GET | `/api/coordinacion/tutores` | Tutores paginados con búsqueda y filtros |
+| GET | `/api/coordinacion/tutores/opciones` | Tutores activos para los selectores de Asignaciones |
+| GET | `/api/coordinacion/departamentos` | Catálogo de departamentos, incluidos inactivos para filtrar registros anteriores |
+| POST | `/api/coordinacion/tutores` | Crear cuenta y perfil juntos (201) |
+| PUT | `/api/coordinacion/tutores/{id}` | Editar nombre, correo y departamento |
+| PATCH | `/api/coordinacion/tutores/{id}/desactivar` | Desactivar sin borrar historial |
+| PATCH | `/api/coordinacion/tutores/{id}/activar` | Reactivar la cuenta |
+
+Todas las rutas requieren coordinación. Las escrituras comprueban además el estado y los roles actuales del autor en MySQL. La creación es transaccional, usa BCrypt y rechaza correos ya registrados, sin convertir cuentas existentes en tutores. La contraseña debe tener al menos 8 caracteres, mayúscula, número y carácter especial, y no superar 72 bytes UTF-8. El `.env` no cambia y no hay migraciones nuevas.
+
+La lista recibe `pagina` desde 1, `tamano` de 1 a 100 (por defecto 5), `busqueda` de hasta 160 caracteres, `estado` opcional (`activo` o `inactivo`) y `departamentoId` opcional. Responde `contenido`, `pagina`, `tamano`, `totalRegistros`, `totalPaginas` y `resumen` con total, activos e inactivos de todos los tutores. MySQL filtra antes de contar y paginar con LIMIT/OFFSET; la búsqueda cubre nombre, correo y departamento. React muestra los índices disponibles y vuelve a la primera página al cambiar filtros. La consulta de opciones se pide aparte para no limitar los selectores a los primeros cinco tutores.
+
+El alta requiere departamento activo; cambiar de departamento también. Se permite conservar el departamento actual aunque después quede inactivo. Editar conserva contraseña, teléfono, avatar y permisos de la cuenta. Crear o editar un correo duplicado devuelve 409; campos inválidos, 422. Los registros inexistentes devuelven 404.
+
+Desactivar bloquea nuevos inicios de sesión y la restauración mediante consulta de sesión. Los JWT ya emitidos mantienen su vencimiento; la revocación de sesiones sigue pendiente. Las asignaciones y sesiones del tutor se conservan, y el tutor inactivo deja de aparecer entre las opciones para nuevas asignaciones. El estado pertenece a la cuenta compartida, por lo que también afecta sus otros roles si los tiene. Las cuentas de coordinación no pueden desactivarse desde esta pantalla. React pide confirmación antes de cambiar el estado.
+
+Verificación: 99 pruebas Java aprobadas, compilación del frontend, 20 comprobaciones de navegador de alta, edición, duplicados, paginación, filtros, login, estados y compatibilidad con Asignaciones, y colección Bruno actualizada. Las pruebas Java revierten sus datos y las de navegador eliminan su tutor y departamentos temporales. No se modificaron los datos de demostración existentes.
 
 ## Conexión del backend con MySQL
 

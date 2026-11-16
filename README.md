@@ -100,8 +100,8 @@ V3 agrega `identidades_externas` y permite `usuarios.password_hash` nulo para cu
 
 ### Pruebas de este avance
 
-- 61 pruebas del backend: autenticación, JWT, roles, validación, registro, vinculación y verificación criptográfica de Google, y consultas de coordinación. Los datos temporales se revierten.
-- 9 peticiones y pruebas Bruno ejecutadas contra la API real: autenticación, permisos y consultas de tutores y estudiantes desde coordinación.
+- 84 pruebas del backend: autenticación, JWT, roles, validación, registro, vinculación y verificación criptográfica de Google, consultas de coordinación y administración de asignaciones. Los datos temporales se revierten.
+- 11 peticiones y pruebas Bruno ejecutadas contra la API real: autenticación, permisos y consultas de tutores, estudiantes, periodos y asignaciones desde coordinación.
 - 10 comprobaciones adicionales de registro real en navegador: campos, confirmación, duplicados, creación de estudiante, restauración de sesión y móvil. La cuenta de prueba se eliminó al terminar.
 - 25 comprobaciones de navegador del login: acceso real de los tres perfiles, errores, carga, recarga, almacenamiento según recordar, salida local, token alterado y móvil sin desbordamiento.
 
@@ -139,6 +139,45 @@ Las estadísticas académicas proceden del expediente más reciente de cada estu
 Este avance es de consulta: se retiraron los formularios que solo simulaban altas, cambios o bajas en memoria. Las operaciones de escritura se implementarán por separado. Las vistas del estudiante y del tutor no se modificaron.
 
 Verificación del frontend: compilación de producción y 22 comprobaciones de navegador, con consultas reales para cotejar filas y JWT; respuestas controladas para fallos de red, listas vacías, reintentos y campos académicos nulos o con promedio cero. No se modificaron registros de MySQL durante estas pruebas.
+
+## Administración de asignaciones
+
+Coordinación puede crear una asignación activa, cambiar el tutor, finalizarla o cancelarla desde Asignaciones. La pantalla consulta MySQL y muestra historial, filtros por periodo y estado, búsqueda y estudiantes sin asignación activa. La tabla ocupa todo el ancho y muestra cinco registros por página, con columnas de estudiante, tutor, fecha, estado y acciones. El icono de detalle despliega periodo, fechas completas, sesiones y motivo. Los paneles de estudiantes sin asignación y acciones rápidas aparecen debajo. Los iconos permiten ver detalle, cambiar tutor, finalizar y cancelar; cancelar conserva el registro.
+
+| Método | Ruta | Función |
+|---|---|---|
+| GET | `/api/coordinacion/periodos` | Periodos registrados |
+| GET | `/api/coordinacion/asignaciones` | Página del historial con filtros, totales y resumen |
+| GET | `/api/coordinacion/asignaciones/exportar` | Todos los registros filtrados, solicitados solo para exportar |
+| GET | `/api/coordinacion/asignaciones/estudiantes?periodoId=<id>` | Estudiantes elegibles del periodo y su asignación activa, si existe |
+| POST | `/api/coordinacion/asignaciones` | Crear una asignación activa (201) |
+| PATCH | `/api/coordinacion/asignaciones/{id}/cambiar-tutor` | Cerrar la anterior y crear otra con el nuevo tutor |
+| PATCH | `/api/coordinacion/asignaciones/{id}/finalizar` | Finalizar sin borrar |
+| PATCH | `/api/coordinacion/asignaciones/{id}/cancelar` | Cancelar sin borrar |
+
+Todas las rutas requieren JWT de coordinación. Las escrituras comprueban además que el usuario conserve su cuenta activa y rol de coordinación en MySQL. No se recibe `asignadoPor` desde React: se obtiene del JWT.
+
+Crear recibe `estudianteId`, `tutorId`, `periodoId` y `motivo` opcional de hasta 1000 caracteres. Cambiar tutor recibe `tutorId` y `motivo` opcional. Finalizar y cancelar no requieren cuerpo; se confirman antes de enviar desde la pantalla.
+
+Para crear o cambiar se exige periodo activo, cuentas de estudiante y tutor activas y un expediente del estudiante con inscripción activa en ese periodo. El estado activo del periodo se toma del catálogo, no de la fecha del equipo. No se permiten dos asignaciones activas para el mismo estudiante y periodo. Las operaciones bloquean el registro del estudiante durante su transacción y la restricción única de MySQL también evita duplicados. Si falla un cambio de tutor, se conserva la asignación original. Los registros pendientes existentes pueden finalizarse o cancelarse; las nuevas asignaciones de coordinación quedan activas directamente.
+
+Las fechas de inicio y cierre se generan en UTC desde MySQL y React las muestra en la zona del navegador. No se permite cerrar una asignación con inicio futuro. Cada cambio de tutor genera otra fila y conserva la anterior finalizada, incluyendo el autor de cada alta. El historial no se elimina. Las sesiones completadas y la última sesión se calculan por estudiante, tutor y periodo, dentro del intervalo de cada asignación (inicio incluido, fin excluido), para no contarlas de nuevo si regresa al mismo tutor.
+
+Exportar asignaciones descarga un CSV con todos los registros que coinciden con los filtros, no solo la página visible. Las fechas del CSV se identifican como UTC y los valores se escapan para evitar que los datos se interpreten como fórmulas. El diseño compacto se comprobó sin desplazamiento horizontal de la tabla en anchos de 1440, 1024 y 882 píxeles; en pantallas pequeñas permite desplazamiento dentro de la tabla. Pasaron 15 comprobaciones de navegador de diseño, paginación, detalle, formularios y exportación, sin modificar registros.
+
+El panel de estudiantes sin asignación activa solo cuenta cuentas y expedientes activos del periodo seleccionado; no incluye estudiantes sin expediente ni pretende contar a todos los usuarios registrados. Para asignar a un estudiante recién registrado se necesita cargar antes su situación académica; la pantalla para administrar expedientes todavía está pendiente. No se agregaron migraciones ni se cambiaron las vistas del estudiante. La elección de tutor desde el estudiante sigue como avance separado y debe respetar la misma unicidad por periodo.
+
+Verificación: pruebas de backend con transacciones revertidas, pruebas de navegador del ciclo completo con registros temporales eliminados al terminar, compilación de frontend y colección Bruno de consultas. Los casos incluyen duplicados, cuentas y periodos inactivos, ausencia de expediente, permisos, cambio inválido, historial y conteo de sesiones.
+
+### Paginación de asignaciones en el servidor
+
+`GET /api/coordinacion/asignaciones` recibe `pagina` (desde 1, por defecto 1), `tamano` (1 a 100, por defecto 5), `periodoId` opcional, `estado` opcional (`activa`, `pendiente`, `finalizada`, `cancelada`) y `busqueda` opcional de hasta 160 caracteres.
+
+La respuesta incluye `contenido`, `pagina`, `tamano`, `totalRegistros`, `totalPaginas` y `resumen` con `total`, `activas` y `pendientes`. El contenido se limita en MySQL con LIMIT/OFFSET y se ordena por inicio e identificador descendentes. Búsqueda por estudiante, matrícula y tutor y filtros se aplican antes de contar y paginar. La búsqueda no distingue mayúsculas ni acentos según el cotejamiento de la base; `%` y `_` se tratan como texto. El resumen de tarjetas corresponde al periodo seleccionado, independientemente de búsqueda y estado.
+
+React solo recibe la página solicitada y muestra botones para todos los índices disponibles, además de Anterior y Siguiente. Al cambiar filtros vuelve a la primera página. La búsqueda espera brevemente al terminar de escribir y cancela consultas anteriores. Cero resultados devuelve `contenido: []`, `totalRegistros: 0`, `totalPaginas: 0` y `pagina: 1`; no se dibujan índices inexistentes. Si la página solicitada dejó de existir, el servidor devuelve la última disponible.
+
+La exportación utiliza `/api/coordinacion/asignaciones/exportar` con los mismos filtros, sin paginación, únicamente al pulsar Exportar. No se descarga todo el historial al abrir la pantalla. La colección Bruno se actualizó al contrato paginado. Se comprobaron 84 pruebas de backend, 13 casos de navegador de páginas, filtros, exportación y reintentos, y 11 peticiones Bruno. No se modificaron tablas ni migraciones.
 
 ## Conexión del backend con MySQL
 

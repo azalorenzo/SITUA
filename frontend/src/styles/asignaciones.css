@@ -1,0 +1,88 @@
+.pagina-asignaciones { display: grid; gap: 22px; color: #203e3b; min-width: 0; }
+.encabezado-asignaciones { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+.encabezado-asignaciones h2 { margin: 0 0 5px; font-size: 21px; font-weight: 650; }
+.encabezado-asignaciones p, .nota-asignaciones { color: #6b8581; font-size: 12px; line-height: 1.6; }
+.resumen-asignaciones { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.tarjeta-resumen-asignaciones { display: flex; align-items: center; gap: 13px; padding: 20px; background: white; border: 1px solid #e7eeed; border-radius: 12px; box-shadow: 0 2px 4px #173d351f; }
+.tarjeta-resumen-asignaciones p { color: #6b8581; font-size: 12px; margin: 0 0 5px; }
+.tarjeta-resumen-asignaciones strong { font-size: 17px; }
+.icono-resumen-asignaciones { width: 44px; height: 44px; flex-shrink: 0; border-radius: 10px; display: grid; place-items: center; }
+.icono-resumen-asignaciones svg { width: 23px; height: 23px; stroke-width: 1.7; }
+.tono-verde { color: #2c9188; background: #effaf8; }
+.tono-amarillo { color: #b78220; background: #fff4d9; }
+.tono-rojo { color: #ce6374; background: #fdeef1; }
+.filtros-asignaciones { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(160px, .65fr) minmax(130px, .45fr); align-items: end; gap: 12px; padding: 18px; background: white; border: 1px solid #e7eeed; border-radius: 12px; box-shadow: 0 2px 4px #173d3514; }
+.busqueda-asignaciones { position: relative; }
+.busqueda-asignaciones > svg { position: absolute; top: 13px; left: 12px; width: 17px; height: 17px; color: #79948f; }
+.busqueda-asignaciones input, .selector-asignaciones select { width: 100%; min-width: 0; height: 43px; padding: 0 12px; color: #45645f; background: white; border: 1px solid #dce7e5; border-radius: 7px; font: inherit; font-size: 12px; }
+.busqueda-asignaciones input { padding-left: 36px; }
+.selector-asignaciones { min-width: 0; }
+.selector-asignaciones label { display: block; font-size: 11px; color: #6b8581; margin-bottom: 5px; }
+.contenedor-tabla-asignaciones { min-width: 0; overflow-x: auto; background: white; border: 1px solid #e0eae7; border-radius: 12px; box-shadow: 0 2px 4px #173d351a; }
+.tabla-asignaciones { width: 100%; table-layout: fixed; border-collapse: collapse; text-align: left; }
+.tabla-asignaciones th { background: #f0faf7; color: #628b83; font-size: 11px; font-weight: 500; padding: 16px 14px; }
+.tabla-asignaciones td { padding: 16px 14px; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; border-top: 1px solid #edf2f0; vertical-align: middle; }
+.tabla-asignaciones tbody > tr:hover { background: #fbfdfc; }
+.nombre-asignacion { font-weight: 500; }
+.tabla-asignaciones small { display: block; color: #7b908c; font-size: 10px; margin-top: 3px; }
+.tabla-asignaciones time { color: #6b8581; font-size: 11px; }
+.estado-asignacion { display: inline-block; border-radius: 20px; padding: 3px 9px; font-size: 10px; line-height: 1.5; }
+.estado-activa { color: #2e8273; background: #e5f4ee; }
+.estado-pendiente { color: #997220; background: #fff4d9; }
+.estado-finalizada { color: #5f7380; background: #eef2f5; }
+.estado-cancelada { color: #b44f60; background: #fdeef1; }
+.acciones-fila-asignaciones { display: flex; gap: 3px; flex-wrap: wrap; align-items: center; }
+.acciones-fila-asignaciones button { display: grid; place-items: center; width: 28px; height: 30px; flex-shrink: 0; border: 0; border-radius: 5px; color: #34887d; background: transparent; cursor: pointer; }
+.acciones-fila-asignaciones button:hover { background: #e9f5f0; }
+.acciones-fila-asignaciones button.accion-cancelar-asignacion { color: #cf566b; }
+.acciones-fila-asignaciones button.accion-cancelar-asignacion:hover { background: #fdeef1; }
+.acciones-fila-asignaciones svg { width: 17px; height: 17px; stroke-width: 1.6; }
+.detalle-asignacion td { background: #f7fbf9; padding: 20px; }
+.detalle-asignacion dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 24px; }
+.detalle-asignacion dt { color: #6b8581; font-size: 11px; }
+.detalle-asignacion dd { font-size: 12px; margin: 4px 0 0; }
+.pie-tabla-asignaciones { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.pie-tabla-asignaciones > p { color: #78918c; font-size: 11px; }
+.pie-tabla-asignaciones nav { display: flex; align-items: center; gap: 10px; }
+.pie-tabla-asignaciones nav button, .boton-secundario-asignaciones { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 10px 14px; border: 1px solid #dce7e5; border-radius: 7px; background: white; color: #34554e; font-size: 12px; cursor: pointer; }
+.pie-tabla-asignaciones nav svg { width: 14px; height: 14px; }
+.pie-tabla-asignaciones nav span { display: grid; place-items: center; min-width: 35px; height: 35px; border-radius: 7px; color: white; background: #236d64; font-size: 12px; }
+.paneles-asignaciones { display: grid; grid-template-columns: 1.5fr 1fr; gap: 22px; }
+.panel-inferior-asignaciones { padding: 22px; background: white; border: 1px solid #e7eeed; border-radius: 12px; box-shadow: 0 2px 4px #173d3514; min-width: 0; }
+.panel-inferior-asignaciones h3 { font-weight: 600; font-size: 15px; margin-bottom: 16px; }
+.pendientes-asignaciones { display: grid; gap: 15px; max-height: 240px; overflow-y: auto; list-style: none; padding: 0; margin: 0 0 12px; }
+.pendientes-asignaciones li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.pendientes-asignaciones li p { font-size: 12px; }
+.pendientes-asignaciones li span { font-size: 11px; color: #78918c; }
+.boton-principal-asignaciones { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 10px 16px; border: 1px solid #236d64; border-radius: 7px; color: white; background: #236d64; font-size: 12px; cursor: pointer; }
+.boton-principal-asignaciones:hover { background: #1c5b53; }
+.acciones-rapidas-asignaciones { display: grid; gap: 10px; margin-bottom: 12px; }
+.boton-principal-asignaciones svg, .boton-secundario-asignaciones svg { width: 16px; height: 16px; }
+.pagina-asignaciones button:disabled { opacity: .45; cursor: default; }
+.pagina-asignaciones button:focus-visible, .pagina-asignaciones input:focus-visible, .pagina-asignaciones select:focus-visible { outline: 2px solid #388e80; outline-offset: 3px; }
+.vacio-asignaciones { padding: 30px 20px; font-size: 13px; color: #78918c; }
+.aviso-asignaciones { padding: 12px 16px; background: #e5f4ee; border-radius: 8px; color: #236d64; font-size: 13px; }
+@media (max-width: 1100px) {
+  .tarjeta-resumen-asignaciones { padding: 15px 12px; gap: 8px; }
+  .icono-resumen-asignaciones { width: 34px; height: 38px; }
+  .tarjeta-resumen-asignaciones p { font-size: 10px; }
+  .tabla-asignaciones th, .tabla-asignaciones td { padding: 12px 9px; }
+}
+@media (max-width: 850px) {
+  .resumen-asignaciones { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .filtros-asignaciones { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .busqueda-asignaciones { grid-column: 1 / -1; }
+  .paneles-asignaciones { grid-template-columns: 1fr; }
+  .detalle-asignacion dl { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pie-tabla-asignaciones { flex-wrap: wrap; }
+}
+@media (max-width: 650px) {
+  .tabla-asignaciones { min-width: 460px; }
+  .filtros-asignaciones { grid-template-columns: 1fr; }
+  .encabezado-asignaciones { align-items: flex-start; flex-wrap: wrap; }
+}
+
+.indices-paginacion-asignaciones { display: flex; flex-wrap: wrap; gap: 6px; }
+.pie-tabla-asignaciones nav { flex-wrap: wrap; }
+.pie-tabla-asignaciones .indices-paginacion-asignaciones button { min-width: 35px; padding: 9px 11px; }
+.pie-tabla-asignaciones button[aria-current="page"] { color: white; background: #236d64; border-color: #236d64; }

@@ -22,6 +22,7 @@ export function Sidebar({
     { id: 'inicio', label: 'Inicio', icon: Home },
     { id: 'tutores', label: 'Tutores', icon: UserCheck },
     { id: 'estudiantes', label: 'Estudiantes', icon: UserCheck },
+    { id: 'asignaciones', label: 'Asignaciones', icon: UserCheck },
     { id: 'reportes', label: 'Reportes', icon: FileText },
     { id: 'avisos', label: 'Avisos', icon: Bell },
   ];

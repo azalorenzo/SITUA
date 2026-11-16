@@ -1,0 +1,25 @@
+meta {
+  name: Consultar asignaciones de coordinación
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{url_api}}/coordinacion/asignaciones
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{token_coordinacion}}
+}
+
+tests {
+  test("Consulta asignaciones con el token de coordinación", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().contenido).to.be.an("array");
+    expect(res.getBody().contenido.length).to.be.at.most(5);
+    expect(res.getBody().pagina).to.equal(1);
+    expect(res.getBody().totalRegistros).to.be.a("number");
+  });
+}

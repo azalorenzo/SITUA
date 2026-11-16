@@ -185,12 +185,14 @@ export default function App() {
 
           {activeSection === 'tutores' && <TutorsManagementView />}
           {activeSection === 'estudiantes' && <StudentsManagementView />}
+          {activeSection === 'asignaciones' && <AssignmentsView />}
           {activeSection === 'avisos' && <CoordinatorNotificationsView />}
 
           {activeSection !== 'inicio' &&
            activeSection !== 'reportes' &&
            activeSection !== 'tutores' &&
            activeSection !== 'estudiantes' &&
+           activeSection !== 'asignaciones' &&
            activeSection !== 'avisos' && (
             <div className="bg-white rounded-lg p-12 text-center shadow-sm">
               <h3 className="font-semibold mb-2">Sección en desarrollo</h3>

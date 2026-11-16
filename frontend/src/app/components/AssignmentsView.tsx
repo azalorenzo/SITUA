@@ -1,300 +1,165 @@
-import { Users, CheckCircle, Clock, AlertTriangle, Search, Filter, Plus, UserPlus, FileText, Mail, BarChart3 } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Plus, Search, Users, CheckCircle, Clock, AlertTriangle, Pencil, Trash2, Eye, RefreshCw, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import '../../styles/asignaciones.css';
+import { consultarTutores } from '../servicios/coordinacion';
+import { exportarAsignaciones, consultarPeriodos, consultarEstudiantesAsignables } from '../servicios/asignaciones';
+import { EstadoConsulta, usarConsultaCoordinacion } from './ConsultaCoordinacion';
+import { usarPaginaAsignaciones } from './usarPaginaAsignaciones';
+import { FormularioAsignacion } from './FormularioAsignacion';
+import type { AsignacionTutor } from '../tipos/asignaciones';
+import type { OperacionAsignacion } from './FormularioAsignacion';
 
-export function AssignmentsView() {
-  const assignments = [
-    {
-      id: 1,
-      student: 'Ana Laura Gómez',
-      studentId: '2021-0456',
-      tutor: 'Mtro. Javier López',
-      assignedDate: '15/05/2026',
-      status: 'Activa',
-      sessions: 8,
-      lastSession: '22/05/2026'
-    },
-    {
-      id: 2,
-      student: 'Carlos Méndez Ruiz',
-      studentId: '2020-0892',
-      tutor: 'Mtra. Elena Torres',
-      assignedDate: '10/05/2026',
-      status: 'Activa',
-      sessions: 12,
-      lastSession: '21/05/2026'
-    },
-    {
-      id: 3,
-      student: 'María Fernández López',
-      studentId: '2021-0234',
-      tutor: 'Mtro. Carlos Ramírez',
-      assignedDate: '08/05/2026',
-      status: 'Activa',
-      sessions: 6,
-      lastSession: '20/05/2026'
-    },
-    {
-      id: 4,
-      student: 'Roberto Silva García',
-      studentId: '2019-0567',
-      tutor: 'Mtra. Ana Martínez',
-      assignedDate: '01/05/2026',
-      status: 'Activa',
-      sessions: 15,
-      lastSession: '23/05/2026'
-    },
-    {
-      id: 5,
-      student: 'Laura Hernández Cruz',
-      studentId: '2021-0789',
-      tutor: 'Mtro. Luis Fernández',
-      assignedDate: '05/05/2026',
-      status: 'Pendiente',
-      sessions: 0,
-      lastSession: '-'
-    },
-    {
-      id: 6,
-      student: 'Pedro Sánchez Ruiz',
-      studentId: '2021-0345',
-      tutor: 'Mtra. Elena Torres',
-      assignedDate: '12/05/2026',
-      status: 'Activa',
-      sessions: 9,
-      lastSession: '19/05/2026'
-    }
-  ];
-
-  const pendingStudents = [
-    { name: 'Jorge Ramírez Luna', id: '2021-0678', reason: 'Sin tutor asignado' },
-    { name: 'Diana Morales Torres', id: '2021-0891', reason: 'Cambio de tutor solicitado' },
-    { name: 'Miguel Ángel Vargas', id: '2020-0234', reason: 'Nuevo ingreso' }
-  ];
-
-  const getStatusColor = (status: string) => {
-    return status === 'Activa'
-      ? 'bg-[#E4F3ED] text-[#227F78]'
-      : 'bg-[#FFF3D6] text-[#986314]';
-  };
-
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="font-semibold mb-1">Asignaciones</h2>
-          <p className="text-sm text-[#53716E]">Gestiona las asignaciones de tutores y estudiantes</p>
-        </div>
-        <button className="flex items-center gap-2 bg-[#1F6662] text-white px-4 py-2 rounded-lg hover:bg-[#1C4543]">
-          <Plus className="w-4 h-4" />
-          Nueva asignación
-        </button>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg p-4 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="bg-[#F2FBF9] p-3 rounded-lg">
-              <Users className="w-5 h-5 text-[#1F6662]" />
-            </div>
-            <div>
-              <p className="text-sm text-[#53716E]">Total asignaciones</p>
-              <p className="font-semibold">523</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg p-4 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="bg-[#E4F3ED] p-3 rounded-lg">
-              <CheckCircle className="w-5 h-5 text-[#227F78]" />
-            </div>
-            <div>
-              <p className="text-sm text-[#53716E]">Asignaciones activas</p>
-              <p className="font-semibold">489</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg p-4 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="bg-[#FFF3D6] p-3 rounded-lg">
-              <Clock className="w-5 h-5 text-[#986314]" />
-            </div>
-            <div>
-              <p className="text-sm text-[#53716E]">Pendientes</p>
-              <p className="font-semibold">34</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg p-4 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="bg-[#FCEBED] p-3 rounded-lg">
-              <AlertTriangle className="w-5 h-5 text-[#B83F4B]" />
-            </div>
-            <div>
-              <p className="text-sm text-[#53716E]">Sin asignar</p>
-              <p className="font-semibold">5</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Assignments Table */}
-        <div className="lg:col-span-2 bg-white rounded-lg shadow-sm">
-          <div className="p-6 border-b border-[#DCE3EA] flex justify-between items-center">
-            <h3 className="font-semibold">Asignaciones actuales</h3>
-            <div className="flex gap-3">
-              <div className="relative">
-                <Search className="w-5 h-5 text-[#53716E] absolute left-3 top-1/2 transform -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Buscar asignación..."
-                  className="pl-10 pr-4 py-2 border border-[#DCE3EA] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1F6662]"
-                />
-              </div>
-              <button className="flex items-center gap-2 px-4 py-2 border border-[#DCE3EA] rounded-lg hover:bg-[#F5F7FA]">
-                <Filter className="w-4 h-4" />
-                Filtros
-              </button>
-            </div>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-[#F5F7FA] border-b border-[#DCE3EA]">
-                <tr>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-[#0B2828]">Estudiante</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-[#0B2828]">Matrícula</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-[#0B2828]">Tutor asignado</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-[#0B2828]">Fecha asignación</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-[#0B2828]">Sesiones</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-[#0B2828]">Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {assignments.map((assignment) => (
-                  <tr key={assignment.id} className="border-b border-[#DCE3EA] hover:bg-[#F5F7FA]">
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-gradient-to-br from-[#1F6662] to-[#1F6662] rounded-full flex items-center justify-center text-white text-xs font-medium">
-                          {assignment.student.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                        </div>
-                        <span className="text-sm font-medium">{assignment.student}</span>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 text-sm text-[#53716E]">{assignment.studentId}</td>
-                    <td className="py-3 px-4 text-sm text-[#0B2828]">{assignment.tutor}</td>
-                    <td className="py-3 px-4 text-sm text-[#53716E]">{assignment.assignedDate}</td>
-                    <td className="py-3 px-4 text-sm font-medium">{assignment.sessions}</td>
-                    <td className="py-3 px-4">
-                      <span className={`text-xs px-3 py-1 rounded-full font-medium ${getStatusColor(assignment.status)}`}>
-                        {assignment.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="p-4 border-t border-[#DCE3EA] flex justify-between items-center">
-            <span className="text-sm text-[#53716E]">Mostrando 6 de 523 asignaciones</span>
-            <div className="flex gap-2">
-              <button className="px-3 py-1 border border-[#DCE3EA] rounded hover:bg-[#F5F7FA] text-sm">
-                Anterior
-              </button>
-              <button className="px-3 py-1 bg-[#1F6662] text-white rounded hover:bg-[#1C4543] text-sm">
-                1
-              </button>
-              <button className="px-3 py-1 border border-[#DCE3EA] rounded hover:bg-[#F5F7FA] text-sm">
-                2
-              </button>
-              <button className="px-3 py-1 border border-[#DCE3EA] rounded hover:bg-[#F5F7FA] text-sm">
-                3
-              </button>
-              <button className="px-3 py-1 border border-[#DCE3EA] rounded hover:bg-[#F5F7FA] text-sm">
-                Siguiente
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Panel */}
-        <div className="space-y-6">
-          {/* Pending Students */}
-          <div className="bg-white rounded-lg p-6 shadow-sm">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-semibold">Estudiantes pendientes de asignar</h3>
-              <button className="text-[#1F6662] text-sm hover:underline">Ver todos</button>
-            </div>
-            <div className="space-y-3">
-              {pendingStudents.map((student, index) => (
-                <div key={index} className="p-3 bg-[#FFF3D6] border-l-4 border-[#986314] rounded-lg">
-                  <div className="flex items-start justify-between mb-1">
-                    <div>
-                      <p className="text-sm font-medium">{student.name}</p>
-                      <p className="text-xs text-[#53716E]">{student.id}</p>
-                    </div>
-                  </div>
-                  <p className="text-xs text-[#53716E] mt-1">{student.reason}</p>
-                  <button className="text-xs text-[#1F6662] hover:text-[#1C4543] mt-2 font-medium">
-                    Asignar tutor →
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Quick Actions */}
-          <div className="bg-white rounded-lg p-6 shadow-sm">
-            <h3 className="font-semibold mb-4">Acciones rápidas</h3>
-            <div className="space-y-3">
-              <button className="w-full flex items-center gap-3 p-3 bg-[#F2FBF9] rounded-lg hover:bg-[#D3F4EE] transition-colors">
-                <div className="bg-[#1F6662] p-2 rounded-lg">
-                  <UserPlus className="w-5 h-5 text-white" />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-medium">Asignar tutor</p>
-                  <p className="text-xs text-[#53716E]">Crear nueva asignación</p>
-                </div>
-              </button>
-
-              <button className="w-full flex items-center gap-3 p-3 bg-[#E4F3ED] rounded-lg hover:bg-[#E4F3ED] transition-colors">
-                <div className="bg-[#227F78] p-2 rounded-lg">
-                  <FileText className="w-5 h-5 text-white" />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-medium">Generar reporte</p>
-                  <p className="text-xs text-[#53716E]">Exportar asignaciones</p>
-                </div>
-              </button>
-
-              <button className="w-full flex items-center gap-3 p-3 bg-[#F2EDF8] rounded-lg hover:bg-[#F2EDF8] transition-colors">
-                <div className="bg-[#6F548F] p-2 rounded-lg">
-                  <BarChart3 className="w-5 h-5 text-white" />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-medium">Ver estadísticas</p>
-                  <p className="text-xs text-[#53716E]">Análisis detallado</p>
-                </div>
-              </button>
-
-              <button className="w-full flex items-center gap-3 p-3 bg-[#FFF3D6] rounded-lg hover:bg-[#FFF3D6] transition-colors">
-                <div className="bg-[#986314] p-2 rounded-lg">
-                  <Mail className="w-5 h-5 text-white" />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-medium">Enviar notificación</p>
-                  <p className="text-xs text-[#53716E]">Avisar a tutores</p>
-                </div>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+const nombresEstado = { activa: 'Activa', pendiente: 'Pendiente', finalizada: 'Finalizada', cancelada: 'Cancelada' };
+function mostrarFechaCorta(fecha: string) {
+  return new Intl.DateTimeFormat('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(fecha + 'Z'));
 }
+function mostrarFecha(fecha: string | null) {
+  if (!fecha) return 'Sin registro';
+  return new Intl.DateTimeFormat('es-MX', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(fecha + 'Z'));
+}
+
+function FilaAsignacion({ asignacion, abierto, puedeCambiar, alVer, alOperar }: {
+  asignacion: AsignacionTutor; abierto: boolean; puedeCambiar: boolean;
+  alVer: () => void; alOperar: (operacion: OperacionAsignacion) => void;
+}) {
+  const vigente = asignacion.estado === 'activa' || asignacion.estado === 'pendiente';
+  return <>
+    <tr>
+      <td><span className="nombre-asignacion">{asignacion.estudiante}</span><small>{asignacion.matricula}</small></td>
+      <td>{asignacion.tutor}</td><td><time dateTime={asignacion.inicioEn + 'Z'} title={mostrarFecha(asignacion.inicioEn)}>{mostrarFechaCorta(asignacion.inicioEn)}</time></td>
+      <td><span className={`estado-asignacion estado-${asignacion.estado}`}>{nombresEstado[asignacion.estado]}</span></td>
+      <td><div className="acciones-fila-asignaciones">
+        <button type="button" aria-label="Ver detalle" title="Ver detalle" aria-expanded={abierto} aria-controls={`detalle-asignacion-${asignacion.id}`} onClick={alVer}><Eye aria-hidden="true" /></button>
+        {asignacion.estado === 'activa' && puedeCambiar && <button type="button" aria-label="Cambiar tutor" title="Cambiar tutor" onClick={() => alOperar({ tipo: 'cambiar', asignacion })}><Pencil aria-hidden="true" /></button>}
+        {vigente && <><button type="button" aria-label="Finalizar" title="Finalizar asignación" onClick={() => alOperar({ tipo: 'finalizar', asignacion })}><CheckCircle aria-hidden="true" /></button><button type="button" className="accion-cancelar-asignacion" aria-label="Cancelar" title="Cancelar asignación" onClick={() => alOperar({ tipo: 'cancelar', asignacion })}><Trash2 aria-hidden="true" /></button></>}
+      </div></td>
+    </tr>
+    {abierto && <tr id={`detalle-asignacion-${asignacion.id}`} className="detalle-asignacion"><td colSpan={5}><dl>
+      {[['Periodo', asignacion.periodo], ['Inicio', mostrarFecha(asignacion.inicioEn)], ['Fin', mostrarFecha(asignacion.finEn)], ['Sesiones completadas', asignacion.sesionesCompletadas], ['Última sesión completada', mostrarFecha(asignacion.ultimaSesion)], ['Motivo', asignacion.motivo || 'Sin motivo registrado']].map(([titulo, valor]) => <div key={titulo}><dt>{titulo}</dt><dd>{valor}</dd></div>)}
+    </dl></td></tr>}
+  </>;
+}
+
+function AsignacionesCoordinacion() {
+  const periodos = usarConsultaCoordinacion(consultarPeriodos);
+  const tutores = usarConsultaCoordinacion(consultarTutores);
+  const [periodoId, cambiarPeriodoId] = useState('');
+  const [estado, cambiarEstado] = useState('todos');
+  const [busqueda, cambiarBusqueda] = useState('');
+  const [busquedaAplicada, cambiarBusquedaAplicada] = useState('');
+  const [exportando, cambiarExportando] = useState(false);
+  const [errorExportacion, cambiarErrorExportacion] = useState('');
+  const [operacion, cambiarOperacion] = useState<OperacionAsignacion | null>(null);
+  const [aviso, cambiarAviso] = useState('');
+  const [pagina, cambiarPagina] = useState(1);
+  const [detalleId, cambiarDetalleId] = useState<number | null>(null);
+  const porPagina = 5;
+  const filtros = { pagina, tamano: porPagina, periodoId, estado, busqueda: busquedaAplicada };
+  const asignaciones = usarPaginaAsignaciones(filtros);
+  const iniciado = useRef(false);
+  useEffect(() => {
+    if (!iniciado.current && periodos.datos.length) {
+      iniciado.current = true;
+      cambiarPeriodoId(String(periodos.datos.find(periodo => periodo.estado === 'activo')?.id || ''));
+    }
+  }, [periodos.datos]);
+  const consultarCandidatos = useCallback((comprobacion: AbortSignal) => periodoId ? consultarEstudiantesAsignables(Number(periodoId), comprobacion) : Promise.resolve([]), [periodoId]);
+  const candidatos = usarConsultaCoordinacion(consultarCandidatos);
+  const sinAsignacion = candidatos.datos.filter(estudiante => estudiante.asignacionActivaId === null);
+  const cargando = periodos.cargando || tutores.cargando;
+  const error = periodos.error || tutores.error;
+  const periodoActivo = periodos.datos.some(periodo => periodo.id === Number(periodoId) && periodo.estado === 'activo');
+  function actualizar() { asignaciones.actualizar(); periodos.actualizar(); tutores.actualizar(); candidatos.actualizar(); }
+
+  const totalPaginas = asignaciones.datos?.totalPaginas || 0;
+  const paginaActual = asignaciones.datos?.pagina || 1;
+  const totalRegistros = asignaciones.datos?.totalRegistros || 0;
+  const filas = asignaciones.cargando || asignaciones.error ? [] : asignaciones.datos?.contenido || [];
+  const resumenServidor = asignaciones.datos?.resumen;
+  useEffect(() => {
+    if (busqueda === busquedaAplicada) return;
+    const espera = window.setTimeout(() => { cambiarBusquedaAplicada(busqueda); cambiarPagina(1); cambiarDetalleId(null); }, 300);
+    return () => window.clearTimeout(espera);
+  }, [busqueda, busquedaAplicada]);
+  useEffect(() => { cambiarDetalleId(null); }, [pagina]);
+  const puedeCrear = !cargando && !error && periodos.datos.some(periodo => periodo.estado === 'activo');
+  const resumen = [
+    { titulo: 'Total asignaciones', valor: asignaciones.cargando ? '—' : resumenServidor?.total ?? '—', icono: Users, tono: 'verde' },
+    { titulo: 'Activas', valor: asignaciones.cargando ? '—' : resumenServidor?.activas ?? '—', icono: CheckCircle, tono: 'verde' },
+    { titulo: 'Pendientes', valor: asignaciones.cargando ? '—' : resumenServidor?.pendientes ?? '—', icono: Clock, tono: 'amarillo' },
+    { titulo: 'Sin asignación activa', valor: !periodoId || candidatos.cargando || candidatos.error ? '—' : sinAsignacion.length, icono: AlertTriangle, tono: 'rojo' },
+  ];
+
+  async function exportar() {
+    if (exportando) return;
+    cambiarExportando(true); cambiarErrorExportacion('');
+    try {
+    const registrosExportables = await exportarAsignaciones(filtros);
+    const escapar = (valor: unknown) => {
+      let texto = String(valor ?? '');
+      if (/^[=+@\-\t\r]/.test(texto)) texto = "'" + texto;
+      return '"' + texto.replaceAll('"', '""') + '"';
+    };
+    const registros = [['Estudiante', 'Matrícula', 'Tutor', 'Periodo', 'Inicio UTC', 'Fin UTC', 'Estado', 'Sesiones completadas', 'Última sesión UTC', 'Motivo'],
+      ...registrosExportables.map(asignacion => [asignacion.estudiante, asignacion.matricula, asignacion.tutor, asignacion.periodo, asignacion.inicioEn,
+        asignacion.finEn, nombresEstado[asignacion.estado], asignacion.sesionesCompletadas, asignacion.ultimaSesion, asignacion.motivo])];
+    const archivo = new Blob(['\uFEFF' + registros.map(fila => fila.map(escapar).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const direccion = URL.createObjectURL(archivo);
+    const enlace = document.createElement('a'); enlace.href = direccion; enlace.download = 'asignaciones.csv'; enlace.click();
+    window.setTimeout(() => URL.revokeObjectURL(direccion), 1000);
+    } catch (fallo) { cambiarErrorExportacion(fallo instanceof Error ? fallo.message : 'No se pudo exportar.'); }
+    finally { cambiarExportando(false); }
+  }
+
+  return <section className="pagina-asignaciones" aria-labelledby="titulo-asignaciones">
+    <header className="encabezado-asignaciones"><div><h2 id="titulo-asignaciones">Asignaciones</h2><p>Administra la relación entre tutores y estudiantes</p></div>
+      <button type="button" className="boton-secundario-asignaciones" onClick={actualizar} disabled={cargando}><RefreshCw aria-hidden="true" />Actualizar</button>
+    </header>
+    {aviso && <p role="status" className="aviso-asignaciones">{aviso}</p>}
+    <EstadoConsulta cargando={cargando} error={error} alReintentar={actualizar} />
+    {!cargando && !error && <>
+      <div className="resumen-asignaciones">{resumen.map(tarjeta => {
+        const Icono = tarjeta.icono;
+        return <div key={tarjeta.titulo} className="tarjeta-resumen-asignaciones"><span className={`icono-resumen-asignaciones tono-${tarjeta.tono}`}><Icono aria-hidden="true" /></span><div><p>{tarjeta.titulo}</p><strong>{tarjeta.valor}</strong></div></div>;
+      })}</div>
+      <div className="filtros-asignaciones">
+        <div className="busqueda-asignaciones"><Search aria-hidden="true" /><input type="search" maxLength={160} aria-label="Buscar asignación" placeholder="Buscar estudiante, matrícula o tutor" value={busqueda} onChange={evento => cambiarBusqueda(evento.target.value)} /></div>
+        <div className="selector-asignaciones"><label htmlFor="periodo-lista">Periodo académico</label><select id="periodo-lista" value={periodoId} onChange={evento => { cambiarPeriodoId(evento.target.value); cambiarPagina(1); cambiarDetalleId(null); }}><option value="">Todos los periodos</option>{periodos.datos.map(periodo => <option key={periodo.id} value={periodo.id}>{periodo.nombre} · {periodo.estado}</option>)}</select></div>
+        <div className="selector-asignaciones"><label htmlFor="estado-asignaciones">Estado de la asignación</label><select id="estado-asignaciones" value={estado} onChange={evento => { cambiarEstado(evento.target.value); cambiarPagina(1); cambiarDetalleId(null); }}><option value="todos">Todos los estados</option>{Object.entries(nombresEstado).map(([valor, nombre]) => <option key={valor} value={valor}>{nombre}</option>)}</select></div>
+      </div>
+      <div className="contenedor-tabla-asignaciones" aria-busy={asignaciones.cargando}>
+        <EstadoConsulta cargando={asignaciones.cargando} error={asignaciones.error} alReintentar={asignaciones.actualizar} />
+        {filas.length ? <table className="tabla-asignaciones" aria-label="Historial de asignaciones"><colgroup><col style={{ width: '26%' }} /><col style={{ width: '23%' }} /><col style={{ width: '17%' }} /><col style={{ width: '12%' }} /><col style={{ width: '22%' }} /></colgroup>
+          <thead><tr>{['Estudiante', 'Tutor', 'Fecha', 'Estado', 'Acciones'].map(titulo => <th key={titulo} scope="col">{titulo}</th>)}</tr></thead>
+          <tbody>{filas.map(asignacion => <FilaAsignacion key={asignacion.id} asignacion={asignacion} abierto={detalleId === asignacion.id}
+            puedeCambiar={periodos.datos.some(periodo => periodo.id === asignacion.periodoId && periodo.estado === 'activo')}
+            alVer={() => cambiarDetalleId(detalleId === asignacion.id ? null : asignacion.id)} alOperar={cambiarOperacion} />)}</tbody>
+        </table> : !asignaciones.cargando && !asignaciones.error && <p className="vacio-asignaciones">No hay asignaciones que coincidan con los filtros.</p>}
+      </div>
+      {!asignaciones.cargando && !asignaciones.error && <div className="pie-tabla-asignaciones"><p role="status">Mostrando {totalRegistros ? (paginaActual - 1) * porPagina + 1 : 0}–{Math.min(paginaActual * porPagina, totalRegistros)} de {totalRegistros} asignaciones</p>
+        <nav aria-label="Paginación de asignaciones"><button type="button" disabled={paginaActual <= 1} onClick={() => cambiarPagina(paginaActual - 1)}><ChevronLeft aria-hidden="true" />Anterior</button>
+          <div className="indices-paginacion-asignaciones">{Array.from({ length: totalPaginas }, (_, indice) => indice + 1).map(numero => <button type="button" key={numero} aria-label={`Página ${numero}`} aria-current={numero === paginaActual ? 'page' : undefined} onClick={() => cambiarPagina(numero)}>{numero}</button>)}</div>
+          <button type="button" disabled={!totalPaginas || paginaActual >= totalPaginas} onClick={() => cambiarPagina(paginaActual + 1)}>Siguiente<ChevronRight aria-hidden="true" /></button></nav>
+      </div>}
+      <div className="paneles-asignaciones">
+        <section className="panel-inferior-asignaciones" aria-labelledby="titulo-sin-asignacion"><h3 id="titulo-sin-asignacion">Estudiantes pendientes de asignar</h3>
+          {!periodoId ? <p className="nota-asignaciones">Selecciona un periodo para consultar los estudiantes.</p> : <>
+            <EstadoConsulta cargando={candidatos.cargando} error={candidatos.error} alReintentar={candidatos.actualizar} />
+            {!candidatos.cargando && !candidatos.error && <>
+              {sinAsignacion.length ? <ul className="pendientes-asignaciones">{sinAsignacion.map(estudiante => <li key={estudiante.id}><div><p>{estudiante.nombre}</p><span>{estudiante.matricula} · {estudiante.carrera}</span></div>{periodoActivo && <button type="button" className="boton-principal-asignaciones" onClick={() => cambiarOperacion({ tipo: 'crear', estudianteId: estudiante.id })}>Asignar tutor</button>}</li>)}</ul> : <p className="nota-asignaciones">No hay estudiantes elegibles sin asignación activa en este periodo.</p>}
+              <p className="nota-asignaciones">Se incluyen estudiantes con cuenta y expediente activos en el periodo seleccionado.</p>
+            </>}
+          </>}
+        </section>
+        <section className="panel-inferior-asignaciones" aria-labelledby="titulo-acciones-asignaciones"><h3 id="titulo-acciones-asignaciones">Acciones rápidas</h3>
+          <div className="acciones-rapidas-asignaciones"><button type="button" className="boton-principal-asignaciones" disabled={!puedeCrear} onClick={() => cambiarOperacion({ tipo: 'crear' })}><Plus aria-hidden="true" />Nueva asignación</button><button type="button" className="boton-secundario-asignaciones" disabled={!totalRegistros || asignaciones.cargando || Boolean(asignaciones.error) || exportando} onClick={exportar}><Download aria-hidden="true" />{exportando ? 'Exportando…' : 'Exportar asignaciones'}</button></div>
+          {errorExportacion && <p role="alert" className="text-sm text-red-700">{errorExportacion}</p>}
+          <p className="nota-asignaciones">La exportación incluye todos los registros que coinciden con los filtros. Usa el icono de detalle para consultar fechas, sesiones y motivo.</p>
+        </section>
+      </div>
+    </>}
+    {operacion && <FormularioAsignacion operacion={operacion} periodos={periodos.datos} tutores={tutores.datos} periodoInicial={periodoId} alCerrar={() => cambiarOperacion(null)} alGuardar={mensaje => { cambiarOperacion(null); cambiarAviso(mensaje); actualizar(); }} />}
+  </section>;
+}
+
+export { AsignacionesCoordinacion as AssignmentsView };

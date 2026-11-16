@@ -1,0 +1,24 @@
+meta {
+  name: Consultar avisos
+  type: http
+  seq: 14
+}
+
+get {
+  url: {{url_api}}/coordinacion/avisos
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{token_coordinacion}}
+}
+
+tests {
+  test("Devuelve contenido paginado de coordinación", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().contenido).to.be.an("array");
+    expect(res.getBody().totalRegistros).to.be.a("number");
+    expect(res.getBody().pagina).to.equal(1);
+  });
+}

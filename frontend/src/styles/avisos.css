@@ -1,0 +1,100 @@
+.pagina-avisos { display:grid; gap:22px; min-width:0; color:#203e3b; }
+.encabezado-avisos { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px; }
+.encabezado-avisos h2 { font-size:21px; font-weight:650; margin-bottom:5px; }
+.encabezado-avisos p { font-size:12px; color:#6b8581; }
+.encabezado-avisos>div:last-child { display:flex; flex-wrap:wrap; gap:10px; }
+.boton-principal-aviso,.boton-secundario-aviso,.boton-retirar-aviso { display:inline-flex; align-items:center; justify-content:center; gap:7px; border-radius:7px; padding:10px 16px; min-height:40px; font-size:12px; cursor:pointer; }
+.boton-principal-aviso { color:white; background:#236d64; border:1px solid #236d64; }
+.boton-principal-aviso:hover { background:#1c5b53; }
+.boton-secundario-aviso { color:#34554e; background:white; border:1px solid #dce7e5; }
+.boton-retirar-aviso { color:white; background:#b84f63; border:1px solid #b84f63; }
+.encabezado-avisos button svg { width:16px; height:16px; }
+.resumen-avisos { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; }
+.resumen-avisos>div { display:flex; align-items:center; gap:12px; background:white; border:1px solid #e5eeeb; border-radius:11px; padding:20px; box-shadow:0 2px 4px #173d3514; }
+.resumen-avisos p { font-size:11px; color:#6b8581; margin-bottom:5px; }
+.resumen-avisos strong { font-size:18px; }
+.icono-resumen-aviso { display:grid; place-items:center; width:40px; height:40px; flex-shrink:0; border-radius:9px; }
+.icono-resumen-aviso svg { width:21px; height:21px; stroke-width:1.7; }
+.icono-resumen-aviso.verde { color:#2d8d80; background:#effaf6; }
+.icono-resumen-aviso.gris { color:#6d8190; background:#edf2f5; }
+.icono-resumen-aviso.rojo { color:#c45c70; background:#fdeef1; }
+.filtros-avisos { display:grid; grid-template-columns:minmax(180px,1.5fr) minmax(110px,.8fr) minmax(100px,.6fr) minmax(100px,.6fr); gap:12px; align-items:end; padding:18px; border:1px solid #e5eeeb; background:white; border-radius:11px; }
+.filtros-avisos>div { min-width:0; }
+.filtros-avisos label { display:block; font-size:11px; color:#6b8581; margin-bottom:5px; }
+.filtros-avisos input,.filtros-avisos select { width:100%; min-width:0; height:43px; border:1px solid #dce7e5; border-radius:7px; padding:0 12px; background:white; color:#45645f; font-size:12px; }
+.busqueda-avisos { position:relative; }
+.busqueda-avisos input { padding-left:36px; }
+.busqueda-avisos svg { position:absolute; left:12px; top:13px; width:17px; height:17px; color:#79948f; }
+.lista-avisos-coordinacion { background:white; border:1px solid #e0eae7; border-radius:11px; overflow:hidden; }
+.lista-avisos-coordinacion ul { list-style:none; padding:0; margin:0; }
+.lista-avisos-coordinacion li+li { border-top:1px solid #edf2f0; }
+.lista-avisos-coordinacion article { display:flex; align-items:flex-start; gap:16px; padding:22px; }
+.icono-lista-aviso { background:#effaf6; border-radius:10px; padding:10px; color:#338c7c; }
+.icono-lista-aviso svg { width:21px; height:21px; }
+.contenido-lista-aviso { flex:1; min-width:0; }
+.titulo-lista-aviso { display:flex; flex-wrap:wrap; align-items:center; gap:9px; margin-bottom:7px; }
+.titulo-lista-aviso h3 { font-size:15px; font-weight:600; overflow-wrap:anywhere; }
+.prioridad-aviso,.etiqueta-retirado-aviso { padding:3px 9px; border-radius:20px; font-size:10px; line-height:1.5; }
+.prioridad-aviso.normal { color:#2e8273; background:#e5f4ee; }
+.prioridad-aviso.media { color:#997220; background:#fff4d9; }
+.prioridad-aviso.alta { color:#b44f60; background:#fdeef1; }
+.etiqueta-retirado-aviso { color:#5f7380; background:#eef2f5; }
+.descripcion-lista-aviso { display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; white-space:pre-wrap; overflow-wrap:anywhere; font-size:13px; color:#53716e; line-height:1.6; }
+.metadatos-lista-aviso,.lecturas-lista-aviso { font-size:11px; color:#78918c; margin-top:9px; overflow-wrap:anywhere; }
+.lecturas-lista-aviso { margin-top:5px; }
+.acciones-lista-aviso { display:flex; align-items:center; flex-shrink:0; gap:4px; }
+.acciones-lista-aviso button { display:grid; place-items:center; width:30px; height:30px; border:0; background:transparent; border-radius:5px; color:#34887d; cursor:pointer; }
+.acciones-lista-aviso button:hover { background:#e9f5f0; }
+.acciones-lista-aviso button.accion-retirar-aviso { color:#bf5366; }
+.acciones-lista-aviso svg { width:17px; height:17px; }
+.lista-vacia-avisos { padding:26px; font-size:13px; color:#78918c; }
+.pie-lista-avisos { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
+.pie-lista-avisos>p { font-size:11px; color:#78918c; }
+.pie-lista-avisos nav { display:flex; flex-wrap:wrap; gap:7px; }
+.pie-lista-avisos nav button { display:flex; align-items:center; justify-content:center; gap:6px; min-width:34px; border:1px solid #dce7e5; border-radius:7px; padding:9px 12px; font-size:12px; background:white; cursor:pointer; }
+.pie-lista-avisos nav svg { width:14px; height:14px; }
+.pie-lista-avisos button[aria-current="page"] { background:#236d64; color:white; border-color:#236d64; }
+.confirmacion-aviso-guardado { padding:12px 16px; color:#236d64; background:#e5f4ee; font-size:13px; border-radius:8px; }
+.dialogo-aviso { margin:auto; width:calc(100% - 32px); max-width:650px; max-height:90vh; overflow-y:auto; padding:26px; border:1px solid #e4ecea; border-radius:12px; color:#284542; box-shadow:0 14px 60px #173d3526; }
+.dialogo-aviso::backdrop { background:#254e4e65; }
+.dialogo-aviso>header { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:22px; }
+.dialogo-aviso h3 { font-size:18px; font-weight:650; }
+.dialogo-aviso>header button { display:grid; place-items:center; width:28px; height:28px; padding:0; border:0; background:transparent; color:#6b8581; cursor:pointer; }
+.dialogo-aviso>header svg { width:20px; height:20px; }
+.formulario-aviso { display:grid; gap:17px; }
+.campo-formulario-aviso { display:grid; gap:6px; min-width:0; }
+.campo-formulario-aviso label,.selector-destinatarios-aviso legend { font-size:12px; color:#45645f; }
+.campo-formulario-aviso input,.campo-formulario-aviso select,.campo-formulario-aviso textarea,.filtros-destinatarios-aviso input,.filtros-destinatarios-aviso select { width:100%; min-width:0; border:1px solid #dce7e5; border-radius:7px; background:white; color:#34554e; padding:10px 12px; font-size:13px; }
+.campo-formulario-aviso textarea { resize:vertical; min-height:110px; }
+.campo-formulario-aviso [aria-invalid="true"] { border-color:#c8707e; }
+.fila-formulario-aviso,.filtros-destinatarios-aviso { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.nota-formulario-aviso { font-size:11px; line-height:1.6; color:#78918c; }
+.errores-formulario-aviso,.error-general-aviso { font-size:11px; line-height:1.5; color:#b33c50; margin:0; padding:0; list-style:none; }
+.dialogo-aviso footer { display:flex; justify-content:flex-end; gap:10px; margin-top:5px; }
+.selector-destinatarios-aviso { border:1px solid #e5eeeb; border-radius:8px; padding:14px; min-width:0; }
+.selector-destinatarios-aviso legend { padding:0 6px; }
+.selector-destinatarios-aviso>.nota-formulario-aviso { margin:10px 0; }
+.opciones-destinatarios-aviso { list-style:none; padding:0; margin:0; max-height:200px; overflow-y:auto; }
+.opciones-destinatarios-aviso label { display:flex; gap:10px; align-items:center; padding:8px 0; font-size:12px; }
+.opciones-destinatarios-aviso small { display:block; font-size:10px; color:#78918c; margin-top:3px; overflow-wrap:anywhere; }
+.opciones-destinatarios-aviso input { accent-color:#236d64; }
+.seleccionados-aviso { display:flex; flex-wrap:wrap; gap:6px; padding:0; margin:0 0 8px; list-style:none; max-height:100px; overflow-y:auto; }
+.seleccionados-aviso li { display:flex; align-items:center; gap:6px; padding:3px 7px; background:#e5f4ee; border-radius:5px; font-size:11px; }
+.seleccionados-aviso button { background:transparent; border:0; color:#236d64; font-size:16px; cursor:pointer; }
+.paginacion-destinatarios-aviso { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:8px; font-size:10px; color:#78918c; border-top:1px solid #e5eeeb; padding-top:10px; }
+.paginacion-destinatarios-aviso button { padding:6px 9px; background:white; border:1px solid #dce7e5; border-radius:5px; cursor:pointer; }
+.detalle-aviso { display:grid; gap:16px; font-size:13px; }
+.detalle-aviso h4 { font-weight:600; overflow-wrap:anywhere; }
+.descripcion-completa-aviso { white-space:pre-wrap; line-height:1.7; overflow-wrap:anywhere; }
+.detalle-aviso dl { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.detalle-aviso dt { color:#78918c; font-size:11px; }
+.detalle-aviso dd { margin-top:4px; overflow-wrap:anywhere; }
+.lista-detalle-destinatarios { max-height:240px; overflow-y:auto; list-style:none; padding:0; margin:0; }
+.lista-detalle-destinatarios li { display:grid; gap:3px; padding:10px 0; border-bottom:1px solid #edf2f0; }
+.lista-detalle-destinatarios strong { font-size:12px; font-weight:500; }
+.lista-detalle-destinatarios span,.lista-detalle-destinatarios small { color:#78918c; font-size:11px; overflow-wrap:anywhere; }
+.confirmacion-retiro-aviso { display:grid; gap:12px; font-size:13px; line-height:1.6; }
+.pagina-avisos button:disabled,.dialogo-aviso button:disabled { opacity:.45; cursor:default; }
+.pagina-avisos button:focus-visible,.pagina-avisos input:focus-visible,.pagina-avisos select:focus-visible,.dialogo-aviso button:focus-visible,.dialogo-aviso input:focus-visible,.dialogo-aviso select:focus-visible,.dialogo-aviso textarea:focus-visible { outline:2px solid #388e80; outline-offset:3px; }
+@media(max-width:1100px) { .resumen-avisos { grid-template-columns:repeat(2,minmax(0,1fr)); } .filtros-avisos { grid-template-columns:repeat(3,minmax(0,1fr)); } .busqueda-avisos { grid-column:1/-1; } }
+@media(max-width:700px) { .filtros-avisos { grid-template-columns:1fr; } .lista-avisos-coordinacion article { gap:10px; padding:16px; flex-wrap:wrap; } .acciones-lista-aviso { margin-left:auto; } .icono-lista-aviso { display:none; } .fila-formulario-aviso,.filtros-destinatarios-aviso,.detalle-aviso dl { grid-template-columns:1fr; } .resumen-avisos>div { padding:12px; gap:8px; } .icono-resumen-aviso { width:30px; height:34px; } }

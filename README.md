@@ -1,6 +1,6 @@
 # Sistema de tutorías
 
-Proyecto con frontend React/Vite, backend Spring Boot (Java) y MySQL. El inicio de sesión por correo y contraseña ya conecta React con Spring Boot y MySQL mediante JWT. Las listas de tutores y estudiantes de coordinación también consultan MySQL. Las demás pantallas conservan por ahora sus datos de demostración; no hay envío real de comunicaciones.
+Proyecto con frontend React/Vite, backend Spring Boot (Java) y MySQL. El inicio de sesión por correo y contraseña ya conecta React con Spring Boot y MySQL mediante JWT. Las listas de tutores y estudiantes y la administración de tutores, asignaciones y avisos de coordinación también utilizan MySQL. Las demás pantallas conservan por ahora sus datos de demostración; no hay envío real de comunicaciones.
 
 ## Inicio de sesión conectado
 
@@ -55,7 +55,7 @@ Cuerpo del login, usando una cuenta del seed:
 
 La validación exige un correo válido y contraseña con mínimo 8 caracteres, una mayúscula, un número y un carácter especial. Se respeta el límite de BCrypt; React también señala contraseñas demasiado largas. El backend compara el hash, revisa que la cuenta esté activa y tenga roles, y devuelve un DTO sin contraseña ni hash. Un correo inexistente y una contraseña incorrecta generan el mismo mensaje.
 
-El JWT se firma con HS256 e incluye identificador de usuario, roles, emisor, audiencia, identificador único, emisión y vencimiento. Spring Security comprueba firma, emisor, audiencia y caducidad. Las rutas de coordinación se reservan a coordinación; las de tutor y estudiante permiten su rol y coordinación. Coordinación ya tiene endpoints de consulta de tutores y estudiantes; las demás operaciones de negocio siguen pendientes. La consulta de sesión además comprueba el estado actual del usuario en MySQL.
+El JWT se firma con HS256 e incluye identificador de usuario, roles, emisor, audiencia, identificador único, emisión y vencimiento. Spring Security comprueba firma, emisor, audiencia y caducidad. Las rutas de coordinación se reservan a coordinación; las de tutor y estudiante permiten su rol y coordinación. Coordinación tiene consultas de tutores y estudiantes y administración de tutores, asignaciones y avisos. La consulta de sesión además comprueba el estado actual del usuario en MySQL.
 
 React abre la pantalla de coordinación, tutor o estudiante según los roles devueltos por el servidor; si hay varios, prioriza coordinación y después tutor. Muestra el nombre y correo auténticos, bloquea el botón durante la solicitud y presenta errores debajo de los campos o un mensaje general ante fallos de acceso/red. Las peticiones protegidas usan `Authorization`.
 
@@ -100,8 +100,8 @@ V3 agrega `identidades_externas` y permite `usuarios.password_hash` nulo para cu
 
 ### Pruebas de este avance
 
-- 99 pruebas del backend: autenticación, JWT, roles, validación, registro, vinculación y verificación criptográfica de Google, consultas de coordinación y administración de asignaciones. Los datos temporales se revierten.
-- 13 peticiones y pruebas Bruno ejecutadas contra la API real: autenticación, permisos y consultas de tutores, estudiantes, periodos y asignaciones desde coordinación.
+- 115 pruebas del backend: autenticación, JWT, roles, validación, registro, vinculación y verificación criptográfica de Google, consultas de coordinación y administración de asignaciones. Los datos temporales se revierten.
+- 15 peticiones y pruebas Bruno ejecutadas contra la API real: autenticación, permisos y consultas de tutores, estudiantes, periodos y asignaciones desde coordinación.
 - 10 comprobaciones adicionales de registro real en navegador: campos, confirmación, duplicados, creación de estudiante, restauración de sesión y móvil. La cuenta de prueba se eliminó al terminar.
 - 25 comprobaciones de navegador del login: acceso real de los tres perfiles, errores, carga, recarga, almacenamiento según recordar, salida local, token alterado y móvil sin desbordamiento.
 
@@ -202,6 +202,35 @@ El alta requiere departamento activo; cambiar de departamento también. Se permi
 Desactivar bloquea nuevos inicios de sesión y la restauración mediante consulta de sesión. Los JWT ya emitidos mantienen su vencimiento; la revocación de sesiones sigue pendiente. Las asignaciones y sesiones del tutor se conservan, y el tutor inactivo deja de aparecer entre las opciones para nuevas asignaciones. El estado pertenece a la cuenta compartida, por lo que también afecta sus otros roles si los tiene. Las cuentas de coordinación no pueden desactivarse desde esta pantalla. React pide confirmación antes de cambiar el estado.
 
 Verificación: 99 pruebas Java aprobadas, compilación del frontend, 20 comprobaciones de navegador de alta, edición, duplicados, paginación, filtros, login, estados y compatibilidad con Asignaciones, y colección Bruno actualizada. Las pruebas Java revierten sus datos y las de navegador eliminan su tutor y departamentos temporales. No se modificaron los datos de demostración existentes.
+
+## Avisos de coordinación
+
+La pantalla de Avisos incluye Crear aviso, detalle, edición y retiro, con búsqueda y filtros por categoría, prioridad y estado desde el backend. Lista cinco registros por página y muestra los índices disponibles. Las tarjetas resumen todos los avisos: total, vigentes, retirados y prioridad alta vigente. Las lecturas se muestran por aviso, no como un estado personal de coordinación.
+
+| Método | Ruta | Función |
+|---|---|---|
+| GET | `/api/coordinacion/avisos` | Lista paginada con filtros y totales |
+| GET | `/api/coordinacion/avisos/destinatarios` | Selector paginado de estudiantes y tutores activos |
+| GET | `/api/coordinacion/avisos/{id}` | Detalle y destinatarios con sus fechas de lectura y ocultación |
+| POST | `/api/coordinacion/avisos` | Guardar aviso y destinatarios juntos (201) |
+| PUT | `/api/coordinacion/avisos/{id}` | Editar un aviso vigente |
+| PATCH | `/api/coordinacion/avisos/{id}/retirar` | Retirar conservando aviso, destinatarios y lecturas |
+
+Todas las rutas requieren coordinación; las escrituras comprueban también el estado y rol actuales del autor en MySQL. El autor se obtiene del JWT. No hay cambios de esquema ni migraciones nuevas.
+
+La lista admite `pagina` desde 1, `tamano` de 1 a 100 (por defecto 5), `busqueda` de hasta 160 caracteres, `categoria` de hasta 40, `prioridad` (`normal`, `media`, `alta`) y `estado` (`vigente`, `retirado`). Los filtros opcionales se omiten para consultar todos sus valores. Responde `contenido`, `pagina`, `tamano`, `totalRegistros`, `totalPaginas` y `resumen`. MySQL filtra antes de contar y paginar; no se descargan todos los avisos para recortarlos en React.
+
+El selector admite página, tamaño (por defecto 10), búsqueda y `rol` opcional (`estudiante` o `tutor`). Un usuario con ambos roles aparece una vez. La selección se conserva al cambiar páginas.
+
+Crear o editar recibe `titulo` de hasta 200 caracteres, `descripcion` de hasta 10000, `categoria` de hasta 40, `prioridad`, `destinatarios` y `usuarioIds` cuando corresponda. `destinatarios` permite `todos` (estudiantes y tutores activos), `estudiantes`, `tutores` o `seleccion`. Esta última acepta hasta 500 identificadores de usuarios; se rechazan inexistentes, inactivos o sin los roles destinatarios. Los grupos se resuelven al guardar y no incorporan automáticamente usuarios registrados después. Una selección vacía o sin usuarios elegibles no deja un aviso incompleto.
+
+Al editar se ofrece `conservar` para mantener la lista actual, incluso si algún destinatario se desactivó después. Si se reemplaza la selección, las lecturas y ocultaciones de los usuarios que permanecen se conservan. Crear no admite `conservar`. Los avisos retirados no pueden editarse. No existe borrado físico desde la pantalla.
+
+Este avance solo guarda los avisos internos en `avisos` y `aviso_destinatarios`. No genera filas en `envios_comunicacion`, no usa servicios externos y no modifica las pantallas ni crea endpoints de lectura para estudiante/tutor. La vista existente `v_avisos_visibles` ya excluye los avisos retirados y las ocultaciones personales.
+
+Para el colaborador: [tablas, consulta y reglas de lectura de avisos](database/AVISOS_PARA_CONSULTA.md). La consulta debe usar `usuarios.id` del JWT, no un identificador elegido por el cliente ni el del perfil de estudiante/tutor. Las acciones de lectura y ocultación personal quedan para su módulo.
+
+Verificación: 115 pruebas del backend y 20 comprobaciones de navegador, incluyendo creación, selección en varias páginas, persistencia, edición conservando lecturas, retiro, filtros y ausencia de envíos externos. Los datos temporales se revirtieron o eliminaron al terminar. Las solicitudes de consulta están incluidas en Bruno.
 
 ## Conexión del backend con MySQL
 

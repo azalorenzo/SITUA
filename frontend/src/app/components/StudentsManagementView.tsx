@@ -1,276 +1,82 @@
-import { mockStudents } from '../mock/data';
-import { Users, CheckCircle, TrendingUp, Clock, AlertTriangle, Search, Filter, Eye, Edit, Trash2, Plus } from 'lucide-react';
+import { useState } from 'react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { useState } from "react";
+import { consultarEstudiantes } from '../servicios/coordinacion';
+import type { EstudianteCoordinacion } from '../tipos/coordinacion';
+import { usarConsultaCoordinacion, EstadoConsulta, BusquedaCoordinacion, InicialesPersona, normalizarBusqueda, estiloCelda, estiloTarjeta } from './ConsultaCoordinacion';
 
-export function StudentsManagementView() {
-  const [alumnos, setAlumnos] = useState(mockStudents);
-  const riskData = [
-    { id: '1', name: 'Sin riesgo', value: 203, color: '#1F6662' },
-    { id: '2', name: 'Riesgo bajo', value: 187, color: '#227F78' },
-    { id: '3', name: 'Riesgo medio', value: 95, color: '#986314' },
-    { id: '4', name: 'Riesgo alto', value: 38, color: '#B83F4B' }
-  ];
+const nivelesRiesgo = [
+  { codigo: 'sin_riesgo', nombre: 'Sin riesgo', color: '#1F6662' },
+  { codigo: 'bajo', nombre: 'Riesgo bajo', color: '#227F78' },
+  { codigo: 'medio', nombre: 'Riesgo medio', color: '#986314' },
+  { codigo: 'alto', nombre: 'Riesgo alto', color: '#B83F4B' },
+  { codigo: null, nombre: 'Sin evaluación', color: '#94A3A0' },
+];
 
-  const semesterData = [
-    { semestre: '1er', estudiantes: 120 },
-    { semestre: '2do', estudiantes: 98 },
-    { semestre: '3er', estudiantes: 145 },
-    { semestre: '4to', estudiantes: 87 },
-    { semestre: '5to', estudiantes: 42 },
-    { semestre: '6to', estudiantes: 31 }
-  ];
+function ListaEstudiantesCoordinacion() {
+  const { datos: estudiantes, cargando, error, actualizar } = usarConsultaCoordinacion(consultarEstudiantes);
+  const [busqueda, cambiarBusqueda] = useState('');
+  const [estado, cambiarEstado] = useState('todos');
+  const termino = normalizarBusqueda(busqueda);
+  const visibles = estudiantes.filter(estudiante => (estado === 'todos' || estudiante.estado === estado)
+    && normalizarBusqueda(`${estudiante.nombre} ${estudiante.correo} ${estudiante.matricula} ${estudiante.carrera || ''}`).includes(termino));
+  const conPromedio = estudiantes.filter(estudiante => estudiante.promedio !== null);
+  const promedio = conPromedio.length ? (conPromedio.reduce((suma, estudiante) => suma + estudiante.promedio!, 0) / conPromedio.length).toFixed(2) : 'Sin datos';
+  const distribucionRiesgo = nivelesRiesgo.map(nivel => ({ ...nivel, cantidad: estudiantes.filter(estudiante => estudiante.nivelRiesgo === nivel.codigo).length })).filter(nivel => nivel.cantidad > 0);
+  const semestres = [...new Set(estudiantes.map(estudiante => estudiante.semestre).filter((semestre): semestre is number => semestre !== null))].sort((primero, segundo) => primero - segundo);
+  const distribucionSemestres = semestres.map(semestre => ({ semestre: `${semestre}°`, cantidad: estudiantes.filter(estudiante => estudiante.semestre === semestre).length }));
+  const enRiesgo = estudiantes.filter(estudiante => estudiante.nivelRiesgo === 'medio' || estudiante.nivelRiesgo === 'alto');
 
+  function riesgoDe(estudiante: EstudianteCoordinacion) {
+    return nivelesRiesgo.find(nivel => nivel.codigo === estudiante.nivelRiesgo) || nivelesRiesgo[4];
+  }
 
-
-  const atRiskStudents = [
-    { name: 'Pedro Sánchez Ruiz', reason: 'Promedio bajo (7.2)', level: 'Alto' },
-    { name: 'Diana Morales Torres', reason: 'Ausentismo frecuente', level: 'Alto' },
-    { name: 'Jorge Ramírez Luna', reason: 'Bajo rendimiento matemáticas', level: 'Medio' }
-  ];
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Sin riesgo':
-        return 'bg-[#D3F4EE] text-[#1C4543]';
-      case 'Riesgo bajo':
-        return 'bg-[#E4F3ED] text-[#227F78]';
-      case 'Riesgo medio':
-        return 'bg-[#FFF3D6] text-[#986314]';
-      case 'Riesgo alto':
-        return 'bg-[#FCEBED] text-[#B83F4B]';
-      default:
-        return 'bg-[#DCE3EA] text-[#0B2828]';
-    }
-  };
-
-  const getAverageColor = (average: number) => {
-    if (average >= 9) return 'text-[#227F78]';
-    if (average >= 8) return 'text-[#1F6662]';
-    if (average >= 7) return 'text-[#986314]';
-    return 'text-[#B83F4B]';
-  };
-
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="font-semibold mb-1">Gestión de Estudiantes</h2>
-          <p className="text-sm text-[#53716E]">Administra y monitorea el desempeño de estudiantes</p>
-        </div>
-        <button className="flex items-center gap-2 bg-[#1F6662] text-white px-4 py-2 rounded-lg hover:bg-[#1C4543]">
-          <Plus className="w-4 h-4" />
-          Agregar estudiante
-        </button>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <div className="bg-white rounded-lg p-4 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="bg-[#F2FBF9] p-3 rounded-lg">
-              <Users className="w-5 h-5 text-[#1F6662]" />
-            </div>
-            <div>
-              <p className="text-sm text-[#53716E]">Total estudiantes</p>
-              <p className="font-semibold">523</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg p-4 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="bg-[#E4F3ED] p-3 rounded-lg">
-              <CheckCircle className="w-5 h-5 text-[#227F78]" />
-            </div>
-            <div>
-              <p className="text-sm text-[#53716E]">Estudiantes activos</p>
-              <p className="font-semibold">38</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg p-4 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="bg-[#FFF3D6] p-3 rounded-lg">
-              <TrendingUp className="w-5 h-5 text-[#986314]" />
-            </div>
-            <div>
-              <p className="text-sm text-[#53716E]">Promedio académico</p>
-              <p className="font-semibold">8.4</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg p-4 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="bg-[#F2EDF8] p-3 rounded-lg">
-              <Clock className="w-5 h-5 text-[#6F548F]" />
-            </div>
-            <div>
-              <p className="text-sm text-[#53716E]">Total de horas</p>
-              <p className="font-semibold">1,248</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg p-4 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="bg-[#FCEBED] p-3 rounded-lg">
-              <AlertTriangle className="w-5 h-5 text-[#B83F4B]" />
-            </div>
-            <div>
-              <p className="text-sm text-[#53716E]">Estudiantes en riesgo</p>
-              <p className="font-semibold">12</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Charts and At Risk Students */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Risk Distribution */}
-        <div className="bg-white rounded-lg p-6 shadow-sm">
-          <h3 className="font-semibold mb-4">Estudiantes por nivel de riesgo</h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <PieChart>
-              <Pie
-                data={riskData}
-                cx="50%"
-                cy="50%"
-                innerRadius={50}
-                outerRadius={80}
-                paddingAngle={3}
-                dataKey="value"
-                nameKey="name"
-              >
-                {riskData.map((entry) => (
-                  <Cell key={entry.id} fill={entry.color} />
-                ))}
-              </Pie>
-              <Legend
-                verticalAlign="bottom"
-                height={36}
-                formatter={(value) => value}
-                iconSize={10}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Semester Distribution */}
-        <div className="bg-white rounded-lg p-6 shadow-sm">
-          <h3 className="font-semibold mb-4">Distribución por semestre</h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={semesterData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#DCE3EA" />
-              <XAxis dataKey="semestre" stroke="#53716E" />
-              <YAxis stroke="#53716E" />
-              <Tooltip />
-              <Bar dataKey="estudiantes" fill="#1F6662" radius={[8, 8, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* At Risk Students */}
-        <div className="bg-white rounded-lg p-6 shadow-sm">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-semibold">Estudiantes en riesgo</h3>
-            <button className="text-[#1F6662] text-sm hover:underline">Ver todos</button>
-          </div>
-          <div className="space-y-3">
-            {atRiskStudents.map((student, index) => (
-              <div key={index} className={`p-3 rounded-lg border-l-4 ${
-                student.level === 'Alto' ? 'border-[#B83F4B] bg-[#FCEBED]' : 'border-[#986314] bg-[#FFF3D6]'
-              }`}>
-                <div className="flex items-start justify-between mb-1">
-                  <p className="text-sm font-medium">{student.name}</p>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${
-                    student.level === 'Alto' ? 'bg-[#FCEBED] text-[#B83F4B]' : 'bg-[#FFF3D6] text-[#986314]'
-                  }`}>
-                    {student.level}
-                  </span>
-                </div>
-                <p className="text-xs text-[#53716E]">{student.reason}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Students Table */}
-      <div className="bg-white rounded-lg shadow-sm">
-        <div className="p-6 border-b border-[#DCE3EA] flex justify-between items-center">
-          <h3 className="font-semibold">Lista de estudiantes</h3>
-          <div className="flex gap-3">
-            <div className="relative">
-              <Search className="w-5 h-5 text-[#53716E] absolute left-3 top-1/2 transform -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Buscar estudiante..."
-                className="pl-10 pr-4 py-2 border border-[#DCE3EA] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1F6662]"
-              />
-            </div>
-            <button className="flex items-center gap-2 px-4 py-2 border border-[#DCE3EA] rounded-lg hover:bg-[#F5F7FA]">
-              <Filter className="w-4 h-4" />
-              Filtros
-            </button>
-          </div>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-[#F5F7FA] border-b border-[#DCE3EA]">
-              <tr>
-                <th className="text-left py-4 px-6 text-sm font-semibold text-[#0B2828]">Estudiante</th>
-                <th className="text-left py-4 px-6 text-sm font-semibold text-[#0B2828]">Matrícula</th>
-                <th className="text-left py-4 px-6 text-sm font-semibold text-[#0B2828]">Carrera</th>
-                // <th className="text-left py-4 px-6 text-sm font-semibold text-[#0B2828]">Semestre</th>
-                //<th className="text-left py-4 px-6 text-sm font-semibold text-[#0B2828]">Promedio</th>
-                //<th className="text-left py-4 px-6 text-sm font-semibold text-[#0B2828]">Tutor</th>
-                //<th className="text-left py-4 px-6 text-sm font-semibold text-[#0B2828]">Estado</th>
-                <th className="text-left py-4 px-6 text-sm font-semibold text-[#0B2828]">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {alumnos.map((alumno: any) => (
-                <tr key={alumno.nombre} className="border-b border-[#DCE3EA] hover:bg-[#F5F7FA]">
-                  <td className="py-4 px-6">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-[#1F6662] to-[#1F6662] rounded-full flex items-center justify-center text-white font-medium">
-                        {alumno.nombre
-                        .split(' ')
-                        .map((n: string) => n[0])
-                        .join('')
-                        .slice(0, 2)}
-                      </div>
-                      <span className="font-medium text-sm">{alumno.nombre}</span>
-                    </div>
-                  </td>
-                  <td className="py-4 px-6 text-sm text-[#53716E]">{alumno.matricula}</td>
-                  <td className="py-4 px-6 text-sm text-[#0B2828]">{alumno.carrera}</td>
-                  
-
-                  <td className="py-4 px-6">
-                    <div className="flex gap-2">
-                      <button className="p-1 hover:bg-[#DCE3EA] rounded">
-                        <Eye className="w-4 h-4 text-[#53716E]" />
-                      </button>
-                      <button className="p-1 hover:bg-[#DCE3EA] rounded">
-                        <Edit className="w-4 h-4 text-[#53716E]" />
-                      </button>
-                      <button className="p-1 hover:bg-[#DCE3EA] rounded">
-                        <Trash2 className="w-4 h-4 text-[#B83F4B]" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+  return <section className="space-y-6" aria-labelledby="titulo-estudiantes">
+    <div className="flex flex-wrap justify-between items-center gap-3">
+      <div><h2 id="titulo-estudiantes" className="font-semibold mb-1">Gestión de Estudiantes</h2><p className="text-sm text-[#53716E]">Consulta los estudiantes y su información académica más reciente</p></div>
+      <button type="button" onClick={actualizar} disabled={cargando} className="px-4 py-2 rounded-lg border border-[#DCE3EA] disabled:opacity-50">Actualizar</button>
     </div>
-  );
+    {!cargando && !error && <>
+      <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        {[['Total de estudiantes', estudiantes.length], ['Cuentas activas', estudiantes.filter(estudiante => estudiante.estado === 'activo').length], ['Promedio de registros disponibles', promedio], ['Riesgo medio o alto', enRiesgo.length]].map(([titulo, valor]) =>
+          <div key={titulo} className={estiloTarjeta}><p className="text-sm text-[#53716E]">{titulo}</p><p className="font-semibold">{valor}</p></div>)}
+      </div>
+      <p className="text-xs text-[#53716E]">Resumen del periodo más reciente registrado para cada estudiante; los periodos pueden ser distintos. Promedio calculado con {conPromedio.length} registros. Las cuentas activas indican el acceso al sistema, no la inscripción académica.</p>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="bg-white rounded-lg p-6 shadow-sm"><h3 className="font-semibold mb-4">Estudiantes por nivel de riesgo</h3>
+          {distribucionRiesgo.length ? <ResponsiveContainer width="100%" height={240}><PieChart><Pie data={distribucionRiesgo} cx="50%" cy="45%" innerRadius={45} outerRadius={70} dataKey="cantidad" nameKey="nombre">
+            {distribucionRiesgo.map(nivel => <Cell key={nivel.nombre} fill={nivel.color} />)}
+          </Pie><Tooltip /><Legend iconSize={10} /></PieChart></ResponsiveContainer> : <p className="text-sm text-[#53716E]">No hay datos para mostrar.</p>}
+        </div>
+        <div className="bg-white rounded-lg p-6 shadow-sm"><h3 className="font-semibold mb-4">Distribución por semestre</h3>
+          {distribucionSemestres.length ? <ResponsiveContainer width="100%" height={240}><BarChart data={distribucionSemestres}><CartesianGrid strokeDasharray="3 3" stroke="#DCE3EA" /><XAxis dataKey="semestre" /><YAxis allowDecimals={false} /><Tooltip /><Bar dataKey="cantidad" name="Estudiantes" fill="#1F6662" radius={[6, 6, 0, 0]} /></BarChart></ResponsiveContainer> : <p className="text-sm text-[#53716E]">No hay semestres registrados.</p>}
+          <p className="text-xs text-[#53716E]">Sin semestre registrado: {estudiantes.filter(estudiante => estudiante.semestre === null).length}</p>
+        </div>
+        <div className="bg-white rounded-lg p-6 shadow-sm"><h3 className="font-semibold mb-4">Estudiantes con riesgo medio o alto</h3>
+          {enRiesgo.length ? <ul className="space-y-3 max-h-64 overflow-y-auto">{enRiesgo.map(estudiante => <li key={estudiante.id} className="p-3 bg-[#F5F7FA] rounded-lg"><p className="text-sm font-medium">{estudiante.nombre}</p><p className="text-xs" style={{ color: riesgoDe(estudiante).color }}>{riesgoDe(estudiante).nombre}</p><p className="text-xs text-[#53716E]">{estudiante.matricula} · {estudiante.periodo}</p></li>)}</ul> : <p className="text-sm text-[#53716E]">No hay registros con riesgo medio o alto. Sin evaluación: {estudiantes.filter(estudiante => estudiante.nivelRiesgo === null).length}.</p>}
+        </div>
+      </div>
+    </>}
+    <div className="bg-white rounded-lg shadow-sm" aria-busy={cargando}>
+      <div className="p-6 border-b border-[#DCE3EA] flex flex-wrap justify-between items-center gap-4"><h3 className="font-semibold">Lista de estudiantes</h3>
+        <BusquedaCoordinacion tipo="estudiante" busqueda={busqueda} alBuscar={cambiarBusqueda} estado={estado} alCambiarEstado={cambiarEstado} />
+      </div>
+      <EstadoConsulta cargando={cargando} error={error} alReintentar={actualizar} />
+      {!cargando && !error && <>
+        <p role="status" className="px-6 pt-4 text-sm text-[#53716E]">{visibles.length} de {estudiantes.length} estudiantes</p>
+        {visibles.length === 0 ? <p className="p-6 text-[#53716E]">{estudiantes.length === 0 ? 'No hay estudiantes registrados.' : 'No se encontraron estudiantes con esos criterios.'}</p>
+          : <div className="overflow-x-auto"><table className="w-full" aria-label="Lista de estudiantes"><thead className="bg-[#F5F7FA] border-b border-[#DCE3EA]"><tr>
+            {['Estudiante', 'Matrícula', 'Carrera', 'Periodo', 'Semestre', 'Promedio', 'Riesgo', 'Estado'].map(titulo => <th key={titulo} scope="col" className={estiloCelda}>{titulo}</th>)}
+          </tr></thead><tbody>{visibles.map(estudiante => <tr key={estudiante.id} className="border-b border-[#DCE3EA] hover:bg-[#F5F7FA]">
+            <td className={estiloCelda}><div className="flex items-center gap-3"><InicialesPersona nombre={estudiante.nombre} /><div><p className="font-medium">{estudiante.nombre}</p><p className="text-xs text-[#53716E]">{estudiante.correo}</p></div></div></td>
+            <td className={estiloCelda}>{estudiante.matricula}</td><td className={estiloCelda}>{estudiante.carrera || 'Sin carrera registrada'}</td>
+            <td className={estiloCelda}>{estudiante.periodo || 'Sin periodo registrado'}</td><td className={estiloCelda}>{estudiante.semestre ?? 'Sin datos'}</td>
+            <td className={estiloCelda}>{estudiante.promedio === null ? 'Sin datos' : estudiante.promedio.toFixed(2)}</td>
+            <td className={estiloCelda}><span style={{ color: riesgoDe(estudiante).color }}>{riesgoDe(estudiante).nombre}</span></td>
+            <td className={estiloCelda}>{estudiante.estado === 'activo' ? 'Activa' : 'Inactiva'}</td>
+          </tr>)}</tbody></table></div>}
+      </>}
+    </div>
+  </section>;
 }
+
+export { ListaEstudiantesCoordinacion as StudentsManagementView };

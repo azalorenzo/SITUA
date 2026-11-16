@@ -1,6 +1,6 @@
 # Sistema de tutorías
 
-Proyecto con frontend React/Vite, backend Spring Boot (Java) y MySQL. El inicio de sesión por correo y contraseña ya conecta React con Spring Boot y MySQL mediante JWT. El resto de los módulos conserva por ahora sus datos de demostración; no hay envío real de comunicaciones.
+Proyecto con frontend React/Vite, backend Spring Boot (Java) y MySQL. El inicio de sesión por correo y contraseña ya conecta React con Spring Boot y MySQL mediante JWT. Las listas de tutores y estudiantes de coordinación también consultan MySQL. Las demás pantallas conservan por ahora sus datos de demostración; no hay envío real de comunicaciones.
 
 ## Inicio de sesión conectado
 
@@ -111,7 +111,7 @@ También se puede ejecutar la colección desde esa carpeta con `npx --package @u
 
 ## Consultas de coordinación
 
-El backend permite consultar los tutores y estudiantes reales de MySQL. Las pantallas de coordinación conservan sus datos de demostración hasta el siguiente avance de frontend.
+El backend y las pantallas de coordinación permiten consultar los tutores y estudiantes reales de MySQL. Ambas opciones están disponibles en el menú de coordinación.
 
 | Método | Ruta | Permiso |
 |---|---|---|
@@ -127,6 +127,18 @@ Los estudiantes incluyen `id` (del perfil estudiante), `usuarioId`, `nombre`, `c
 No se modificaron tablas, migraciones ni entidades compartidas con el módulo de estudiante. Los archivos nuevos de consulta están separados en controlador, servicio, repositorio y respuestas de coordinación.
 
 Para probar en Bruno, ejecutar primero `coordinacion/iniciar-sesion.bru` y después las consultas de esa carpeta. Se utilizan las cuentas del seed y una variable temporal `token_coordinacion`.
+
+### Listas conectadas en React
+
+Las pantallas de tutores y estudiantes consumen las rutas anteriores con el JWT de la sesión. Muestran carga, error con reintento, lista vacía y búsqueda sin resultados. El botón Actualizar vuelve a consultar el servidor. Al cambiar de pantalla se cancela la consulta pendiente para evitar mostrar una respuesta anterior.
+
+La búsqueda se aplica a los datos recibidos, sin distinguir mayúsculas ni acentos: nombre, correo y departamento en tutores; nombre, correo, matrícula y carrera en estudiantes. El selector filtra por estado de la cuenta. Las tarjetas y gráficos resumen toda la lista cargada; el contador de la tabla indica cuántos registros coinciden con la búsqueda y el filtro.
+
+Las estadísticas académicas proceden del expediente más reciente de cada estudiante. El promedio general usa únicamente promedios disponibles, sin convertir ausencias en cero. Riesgo nulo se muestra como Sin evaluación. Los registros sin semestre se cuentan aparte. Los periodos pueden ser distintos y se indica en la pantalla. La cifra de horas ficticias fue retirada porque no forma parte de estas consultas.
+
+Este avance es de consulta: se retiraron los formularios que solo simulaban altas, cambios o bajas en memoria. Las operaciones de escritura se implementarán por separado. Las vistas del estudiante y del tutor no se modificaron.
+
+Verificación del frontend: compilación de producción y 22 comprobaciones de navegador, con consultas reales para cotejar filas y JWT; respuestas controladas para fallos de red, listas vacías, reintentos y campos académicos nulos o con promedio cero. No se modificaron registros de MySQL durante estas pruebas.
 
 ## Conexión del backend con MySQL
 

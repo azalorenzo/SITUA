@@ -93,7 +93,9 @@ public class ConfiguracionSeguridad {
                 .authorizeHttpRequests(permisosRuta -> permisosRuta
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/autenticacion/iniciar-sesion",
-                                "/api/autenticacion/registrar", "/api/autenticacion/google").permitAll()
+                                "/api/autenticacion/registrar", "/api/autenticacion/google",
+                                "/api/autenticacion/recuperacion/solicitar",
+                                "/api/autenticacion/recuperacion/cambiar-contrasena").permitAll()
                         .requestMatchers("/api/coordinacion/**").hasRole("coordinador")
                         .requestMatchers("/api/tutor/**").hasAnyRole("coordinador", "tutor")
                         .requestMatchers("/api/estudiante/**").hasAnyRole("coordinador", "estudiante")

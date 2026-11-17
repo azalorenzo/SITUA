@@ -1,118 +1,12 @@
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from 'recharts';
-
-export function AcademicReasonsChart({ reportes }: any) {
-  
-  const bajoRendimiento = reportes.filter(
-  (r: any) => r.motivo === "Bajo rendimiento"
-).length;
-
-const ansiedad = reportes.filter(
-  (r: any) => r.motivo === "Ansiedad/Estrés"
-).length;
-
-const familiares = reportes.filter(
-  (r: any) => r.motivo === "Problemas familiares"
-).length;
-
-const otros = reportes.filter(
-  (r: any) => r.motivo === "Otros"
-).length;
-
-  const data = [
-
-  {
-    label: "Bajo rendimiento",
-    value: bajoRendimiento,
-    color: "#1F6662"
-  },
-
-  {
-    label: "Ansiedad/Estrés",
-    value: ansiedad,
-    color: "#986314"
-  },
-
-  {
-    label: "Problemas familiares",
-    value: familiares,
-    color: "#B83F4B"
-  },
-
-  {
-    label: "Otros",
-    value: otros,
-    color: "#227F78"
-  }
-
-];
-
-
-
-const total = data.reduce((sum, item) => sum + item.value, 0);
-  
-
-  return (
-    <div className="bg-white rounded-lg p-6 shadow-sm h-full">
-      <h3 className="font-semibold mb-4">Motivos de reporte académico</h3>
-      <ResponsiveContainer width="100%" height={320}>
-        <PieChart>
-          <Pie
-            data={data}
-            cx="50%"
-            cy="50%"
-            innerRadius={70}
-            outerRadius={85}
-            paddingAngle={3}
-            dataKey="value"
-            nameKey="label"
-          >
-            {data.map((entry) => (
-              <Cell key={entry.label} fill={entry.color} />
-            ))}
-          </Pie>
-        </PieChart>
-      </ResponsiveContainer>
-      <div className="mt-4 space-y-2">
-
-  {data.map((item) => {
-
-    const porcentaje = total > 0
-      ? ((item.value / total) * 100).toFixed(0)
-      : 0;
-
-    return (
-
-      <div
-        key={item.label}
-        className="flex items-center justify-between text-sm"
-      >
-
-        <div className="flex items-center gap-2">
-
-          <div
-            className="w-3 h-3 rounded-full"
-            style={{ backgroundColor: item.color }}
-          />
-
-          <span>
-            {item.label}
-          </span>
-
-        </div>
-
-        <span className="font-medium">
-
-          {item.value} ({porcentaje}%)
-
-        </span>
-
-      </div>
-
-    );
-
-  })}
-
-</div>
-    </div>
-  );
+import { PieChart,Pie,Cell,ResponsiveContainer,Tooltip } from 'recharts';
+import type { MotivoDistribucion } from '../tipos/reportes';
+const colores=['#1F6662','#986314','#B83F4B','#227F78','#5D7796','#8A6A9E'];
+function GraficaMotivosReportes({motivos,cargando}:{motivos:MotivoDistribucion[];cargando:boolean}){
+  return <section className="grafica-motivos-reportes" aria-labelledby="titulo-motivos-reportes"><h3 id="titulo-motivos-reportes">Motivos de reporte académico</h3>
+    {cargando?<p className="nota-reportes">Consultando distribución…</p>:!motivos.length?<p className="nota-reportes">No hay datos para estos filtros.</p>:<>
+      <ResponsiveContainer width="100%" height={220}><PieChart><Pie data={motivos} dataKey="cantidad" nameKey="nombre" cx="50%" cy="50%" innerRadius={57} outerRadius={78}>{motivos.map((motivo,indice)=><Cell key={motivo.id} fill={colores[indice%colores.length]}/>)}</Pie><Tooltip/></PieChart></ResponsiveContainer>
+      <ul>{motivos.map((motivo,indice)=><li key={motivo.id}><span><i style={{background:colores[indice%colores.length]}}/>{motivo.nombre}</span><strong>{motivo.cantidad} ({motivo.porcentaje}%)</strong></li>)}</ul>
+    </>}
+  </section>;
 }
+export { GraficaMotivosReportes as AcademicReasonsChart };

@@ -1,89 +1,23 @@
 import { Search } from 'lucide-react';
-
-export function ReportGenerator({
-
-  busquedaTutor,
-
-  setBusquedaTutor,
-
-  estatusFiltro,
-
-  setEstatusFiltro
-
-}: any) {
-
-  return (
-
-    <div className="bg-white rounded-lg p-6 shadow-sm">
-
-      <h3 className="font-semibold text-xl mb-6">
-        Selecciona los filtros del reporte
-      </h3>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-
-        {/* BUSCADOR */}
-
-        <div>
-
-          <label className="text-sm text-[#53716E] mb-2 block">
-            Tutor o estudiante
-          </label>
-
-          <div className="relative">
-
-            <input
-              type="text"
-              placeholder="Buscar por nombre"
-              value={busquedaTutor}
-              onChange={(e) => setBusquedaTutor(e.target.value)}
-              className="w-full border border-[#DCE3EA] rounded-lg px-3 py-2 pr-10"
-            />
-
-            <Search className="w-4 h-4 text-[#53716E] absolute right-3 top-3" />
-
-          </div>
-
-        </div>
-
-        {/* ESTATUS */}
-
-        <div>
-
-          <label className="text-sm text-[#53716E] mb-2 block">
-            Estatus de tutoría
-          </label>
-
-          <select
-            value={estatusFiltro}
-            onChange={(e) => setEstatusFiltro(e.target.value)}
-            className="w-full border border-[#DCE3EA] rounded-lg px-3 py-2"
-          >
-
-            <option>Todos</option>
-
-            <option>Completado</option>
-
-            <option>Pendiente</option>
-
-          </select>
-
-        </div>
-
-        {/* BOTÓN */}
-
-        <button
-          className="bg-[#1F6662] text-white py-2.5 px-6 rounded-lg hover:bg-[#1C4543] transition font-medium"
-        >
-
-          Buscar reporte
-
-        </button>
-
-      </div>
-
+import type { CriteriosReportes,MotivoReporte } from '../tipos/reportes';
+import type { PeriodoAcademico } from '../tipos/asignaciones';
+import type { ErroresFormulario } from '../tipos/autenticacion';
+function FiltrosGeneradorReportes({criterios,alCambiar,alBuscar,periodos,motivos,cargandoCatalogos,errores}:{
+  criterios:CriteriosReportes;alCambiar:(campo:keyof CriteriosReportes,valor:string)=>void;alBuscar:(evento:React.FormEvent)=>void;
+  periodos:PeriodoAcademico[];motivos:MotivoReporte[];cargandoCatalogos:boolean;errores:ErroresFormulario;
+}){
+  function mensajes(campo:string){return errores[campo]&&<ul id={`error-reporte-${campo}`} className="errores-filtro-reporte">{errores[campo].map(texto=><li key={texto}>{texto}</li>)}</ul>;}
+  return <form className="filtros-reportes" noValidate onSubmit={alBuscar}>
+    <h3>Selecciona los filtros del reporte</h3>
+    <div className="campos-filtros-reportes">
+      <div><label htmlFor="reporte-busqueda">Tutor o estudiante</label><div className="busqueda-reportes"><input id="reporte-busqueda" type="search" maxLength={160} placeholder="Nombre o matrícula" value={criterios.busqueda} onChange={evento=>alCambiar('busqueda',evento.target.value)}/><Search aria-hidden="true"/></div>{mensajes('busqueda')}</div>
+      <div><label htmlFor="reporte-estado">Estado del reporte</label><select id="reporte-estado" value={criterios.estado} onChange={evento=>alCambiar('estado',evento.target.value)}><option value="">Todos</option><option value="completado">Completado</option><option value="pendiente">Pendiente</option></select>{mensajes('estado')}</div>
+      <div><label htmlFor="reporte-periodoId">Periodo académico</label><select id="reporte-periodoId" value={criterios.periodoId} disabled={cargandoCatalogos} onChange={evento=>alCambiar('periodoId',evento.target.value)}><option value="">Todos los periodos</option>{periodos.map(periodo=><option key={periodo.id} value={periodo.id}>{periodo.nombre}</option>)}</select>{mensajes('periodoId')}</div>
+      <div><label htmlFor="reporte-motivoId">Motivo</label><select id="reporte-motivoId" value={criterios.motivoId} disabled={cargandoCatalogos} onChange={evento=>alCambiar('motivoId',evento.target.value)}><option value="">Todos los motivos</option>{motivos.map(motivo=><option key={motivo.id} value={motivo.id}>{motivo.nombre}{motivo.activo?'':' (inactivo)'}</option>)}</select>{mensajes('motivoId')}</div>
+      <div><label htmlFor="reporte-desde">Fecha inicial</label><input id="reporte-desde" type="date" value={criterios.desde} onChange={evento=>alCambiar('desde',evento.target.value)}/>{mensajes('desde')}</div>
+      <div><label htmlFor="reporte-hasta">Fecha final</label><input id="reporte-hasta" type="date" value={criterios.hasta} aria-invalid={Boolean(errores.hasta)} aria-describedby={errores.hasta?'error-reporte-hasta':undefined} onChange={evento=>alCambiar('hasta',evento.target.value)}/>{mensajes('hasta')}</div>
     </div>
-
-  );
-
+    <div className="acciones-filtros-reportes"><p>Los filtros se aplican al buscar. El PDF incluye los resultados de la búsqueda aplicada.</p><button type="submit" className="boton-principal-reporte"><Search aria-hidden="true"/>Buscar reporte</button></div>
+  </form>;
 }
+export { FiltrosGeneradorReportes as ReportGenerator };

@@ -1,23 +1,11 @@
-import type { UsuarioSesion } from '../tipos/autenticacion';
-import imagenCoordinacion from '../../assets/secretary.png';
-import { Home, UserCheck, FileText, Bell, BookOpen,LogOut } from 'lucide-react';
+import { Home, UserCheck, FileText, Bell, BookOpen } from 'lucide-react';
 
-interface SidebarProps {
-  usuario: UsuarioSesion;
-  onLogout: () => void;
+interface PropiedadesMenuCoordinacion {
   activeSection: string;
-  onSectionChange: (section: string) => void;
+  onSectionChange: (seccion: string) => void;
 }
 
-export function Sidebar({
-
-  activeSection,
-
-  onSectionChange,
-
-  onLogout, usuario
-
-}: SidebarProps) {
+export function Sidebar({activeSection,onSectionChange}:PropiedadesMenuCoordinacion) {
   const menuItems = [
     { id: 'inicio', label: 'Inicio', icon: Home },
     { id: 'tutores', label: 'Tutores', icon: UserCheck },
@@ -29,7 +17,7 @@ export function Sidebar({
   
 
   return (
-    <aside className="w-64 bg-[#1C4543] text-white h-screen flex flex-col">
+    <aside className="w-64 shrink-0 bg-[#1C4543] text-white h-screen flex flex-col">
       <div className="p-6 border-b border-[#1F6662]">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
@@ -61,37 +49,6 @@ export function Sidebar({
         })}
       </nav>
 
-      <div className="mt-auto p-4 border-t border-[#1F6662]">
-
-  <div className="flex items-center gap-2 mb-2">
-
-    <img
-      src={usuario.avatarUrl || imagenCoordinacion}
-      alt="Avatar"
-      className="w-12 h-12 rounded-full object-cover"
-    />
-
-    <div>
-
-      <h2 className="font-semibold text-white">
-        {usuario.nombre}
-      </h2>
-      <p className="correo-sesion">{usuario.correo}</p>
-
-    </div>
-
-  </div>
-
-  <button
-  onClick={onLogout}
-    className="flex items-center gap-2 text-[#D3F4EE] hover:text-white transition"
-  >
-    <LogOut className="w-5 h-5" />
-
-    Salir
-  </button>
-
-</div>
-          </aside>
-        );
+    </aside>
+  );
 }

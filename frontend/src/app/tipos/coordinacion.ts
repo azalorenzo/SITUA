@@ -33,3 +33,14 @@ export interface PaginaTutores {
   contenido: TutorCoordinacion[]; pagina: number; tamano: number; totalRegistros: number; totalPaginas: number;
   resumen: { total: number; activos: number; inactivos: number };
 }
+
+export interface FiltrosEstudiantes {
+  pagina:number; tamano:number; busqueda:string; estado:string;
+}
+export interface PaginaEstudiantes {
+  contenido:EstudianteCoordinacion[]; pagina:number; tamano:number; totalRegistros:number; totalPaginas:number;
+  resumen:{total:number; activos:number; promedio:number|null; conPromedio:number; enRiesgo:number; sinEvaluacion:number; sinSemestre:number};
+  distribucionRiesgo:{codigo:EstudianteCoordinacion['nivelRiesgo']; cantidad:number}[];
+  distribucionSemestres:{semestre:string; cantidad:number}[];
+  enRiesgo:Pick<EstudianteCoordinacion,'id'|'nombre'|'matricula'|'periodo'|'nivelRiesgo'>[];
+}

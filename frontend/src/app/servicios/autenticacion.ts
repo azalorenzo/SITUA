@@ -120,3 +120,18 @@ export function validarRegistro(datos: import('../tipos/autenticacion').DatosReg
   if (!datos.confirmarContrasena || datos.contrasena !== datos.confirmarContrasena) errores.confirmarContrasena = ['Las contraseñas deben coincidir.'];
   return errores;
 }
+
+export async function solicitarArchivoApi(ruta:string):Promise<Blob> {
+  const cabeceras=new Headers({Accept:'application/pdf, application/json'});
+  const token=obtenerToken();if(token)cabeceras.set('Authorization',`Bearer ${token}`);
+  let respuesta:Response;
+  try { respuesta=await fetch(`${direccionApi}${ruta}`,{headers:cabeceras}); }
+  catch { throw new ErrorSolicitud(0,'No se pudo conectar con el servidor para descargar el archivo.'); }
+  if(!respuesta.ok){
+    if(respuesta.status===401)limpiarSesion();
+    const contenido=await respuesta.json().catch(()=>null);
+    throw new ErrorSolicitud(respuesta.status,contenido?.mensaje||'No se pudo generar el documento.',contenido?.erroresPorCampo||{});
+  }
+  if(!respuesta.headers.get('Content-Type')?.includes('application/pdf'))throw new ErrorSolicitud(0,'El servidor no devolvió un PDF válido.');
+  return respuesta.blob();
+}

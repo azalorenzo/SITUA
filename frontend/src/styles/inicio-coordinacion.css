@@ -1,0 +1,31 @@
+.inicio-coordinacion { display:grid; gap:22px; min-width:0; color:#203e3b; }
+.inicio-coordinacion>header { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px; }
+.inicio-coordinacion h2 { font-size:21px; font-weight:650; margin-bottom:5px; }
+.inicio-coordinacion>header p { font-size:12px; color:#6b8581; }
+.inicio-coordinacion>header button { display:inline-flex; align-items:center; gap:7px; padding:10px 15px; color:#34554e; background:white; border:1px solid #dce7e5; border-radius:7px; font-size:12px; cursor:pointer; }
+.inicio-coordinacion>header button:disabled { opacity:.45; cursor:default; }
+.inicio-coordinacion>header button svg { width:16px; height:16px; }
+.tarjetas-inicio-coordinacion { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
+.tarjetas-inicio-coordinacion>div { display:flex; align-items:center; gap:14px; padding:22px; background:white; border:1px solid #e5eeeb; border-radius:11px; box-shadow:0 2px 4px #173d3514; }
+.tarjetas-inicio-coordinacion p { font-size:12px; color:#6b8581; margin-bottom:5px; }
+.tarjetas-inicio-coordinacion strong { font-size:23px; }
+.icono-tarjeta-inicio { display:grid; place-items:center; width:45px; height:45px; flex-shrink:0; border-radius:10px; }
+.icono-tarjeta-inicio svg { width:23px; height:23px; stroke-width:1.7; }
+.icono-tarjeta-inicio.verde { color:#2d8d80; background:#effaf6; }
+.icono-tarjeta-inicio.rojo { color:#c45c70; background:#fdeef1; }
+.nota-inicio-coordinacion { font-size:11px; line-height:1.6; color:#78918c; }
+.graficas-inicio-coordinacion { display:grid; grid-template-columns:minmax(260px,1fr) minmax(0,1.6fr); gap:22px; min-width:0; align-items:start; }
+.grafica-inicio-coordinacion { padding:22px; background:white; border:1px solid #e0eae7; border-radius:11px; min-width:0; }
+.grafica-inicio-coordinacion h3 { font-size:15px; font-weight:600; margin-bottom:7px; }
+.grafica-inicio-coordinacion ul { display:grid; gap:12px; padding:0; margin:0; list-style:none; }
+.grafica-inicio-coordinacion li { display:flex; align-items:center; justify-content:space-between; gap:12px; font-size:12px; }
+.grafica-inicio-coordinacion li>span { display:flex; align-items:center; gap:8px; }
+.grafica-inicio-coordinacion li strong { white-space:nowrap; font-size:11px; font-weight:500; }
+.grafica-inicio-coordinacion i { display:inline-block; width:10px; height:10px; flex-shrink:0; border-radius:3px; }
+.datos-serie-inicio { font-size:12px; color:#53716e; margin-top:10px; }
+.datos-serie-inicio summary { cursor:pointer; }
+.datos-serie-inicio ul { padding:14px 0 0; }
+.vacio-inicio-coordinacion { padding:30px 0; font-size:12px; color:#78918c; }
+.inicio-coordinacion button:focus-visible,.inicio-coordinacion summary:focus-visible { outline:2px solid #388e80; outline-offset:3px; }
+@media(max-width:1200px) { .graficas-inicio-coordinacion { grid-template-columns:1fr; } }
+@media(max-width:800px) { .tarjetas-inicio-coordinacion { grid-template-columns:1fr; } }

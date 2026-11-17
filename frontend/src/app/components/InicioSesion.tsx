@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import RecuperarContrasena from './RecuperarContrasena';
 import RegistroCuenta from './RegistroCuenta';
 import AccesoGoogle from './AccesoGoogle';
 import { Eye, EyeOff, LoaderCircle } from 'lucide-react';
@@ -13,6 +14,7 @@ interface PropiedadesInicioSesion {
 }
 
 export default function InicioSesion({ alIngresar, mensajeInicial = '' }: PropiedadesInicioSesion) {
+  const [recuperacion, cambiarRecuperacion] = useState(false);
   const [registro, cambiarRegistro] = useState(false);
   const [contrasenaVisible, cambiarContrasenaVisible] = useState(false);
   const [correo, cambiarCorreo] = useState('');
@@ -68,7 +70,7 @@ export default function InicioSesion({ alIngresar, mensajeInicial = '' }: Propie
 
         <div className="panel-formulario-acceso">
           <p className="nombre-sistema-acceso">Control Académico</p>
-          {registro ? <RegistroCuenta alIngresar={alIngresar} alVolver={() => cambiarRegistro(false)} /> : <>
+          {recuperacion ? <RecuperarContrasena correoInicial={correo} alVolver={(direccion,exito)=>{cambiarCorreo(direccion);cambiarRecuperacion(false);cambiarContrasena('');cambiarErrores({});cambiarMensaje('');cambiarAviso(exito||'');}}/> : registro ? <RegistroCuenta alIngresar={alIngresar} alVolver={() => cambiarRegistro(false)} /> : <>
           <header className="encabezado-acceso">
             <h1 id="titulo-inicio-sesion">Iniciar sesión</h1>
             <p>Ingresa tus datos para continuar</p>
@@ -119,7 +121,7 @@ export default function InicioSesion({ alIngresar, mensajeInicial = '' }: Propie
                 <input type="checkbox" name="recordar" checked={recordar} disabled={enProceso} onChange={evento => cambiarRecordar(evento.target.checked)} />
                 <span>Recordar inicio de sesión</span>
               </label>
-              <button type="button" className="enlace-acceso" onClick={() => cambiarAviso('La recuperación de contraseña estará disponible próximamente.')}>¿Olvidaste tu contraseña?</button>
+              <button type="button" className="enlace-acceso" disabled={enProceso} onClick={() => { cambiarRecuperacion(true); cambiarContrasena(''); cambiarAviso(''); }}>¿Olvidaste tu contraseña?</button>
             </div>
 
             <p className="mensaje-acceso" role="alert">{mensaje}</p>

@@ -1,8 +1,9 @@
 package com.progweb.backend.controladores;
 
-import java.util.List;
-import com.progweb.backend.respuestas.RespuestaTutorCoordinacion;
-import com.progweb.backend.respuestas.RespuestaEstudianteCoordinacion;
+import com.progweb.backend.respuestas.PaginaEstudiantes;
+import com.progweb.backend.solicitudes.FiltrosEstudiantes;
+import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import com.progweb.backend.servicios.ServicioConsultasCoordinacion;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
@@ -20,7 +21,7 @@ public class ControladorConsultasCoordinacion {
     }
 
     @GetMapping("/estudiantes")
-    public ResponseEntity<List<RespuestaEstudianteCoordinacion>> consultarEstudiantes() {
-        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(consultas.consultarEstudiantes());
+    public ResponseEntity<PaginaEstudiantes> consultarEstudiantes(@Valid @ModelAttribute FiltrosEstudiantes filtros) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(consultas.consultarEstudiantes(filtros));
     }
 }

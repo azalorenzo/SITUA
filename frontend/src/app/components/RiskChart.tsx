@@ -1,113 +1,12 @@
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Legend
-} from 'recharts';
-
-export function RiskChart({ dashboardStats }: any) {
-
-  if (!dashboardStats) {
-
-    return (
-
-      <div className="bg-white rounded-lg p-6 shadow-sm">
-
-        Cargando gráfica...
-
-      </div>
-
-    );
-
-  }
-
-  const data =
-
-    dashboardStats.motivos.map(
-      (item: any, index: number) => {
-
-        const colores = [
-
-          "#B83F4B",
-          "#986314",
-          "#227F78",
-          "#1F6662"
-
-        ];
-
-        return {
-
-          name: item.motivo,
-
-          value: Number(item.total),
-
-          color: colores[index % colores.length]
-
-        };
-
-      }
-
-    );
-
-  return (
-
-  <div className="bg-white rounded-lg p-6 shadow-sm h-full flex flex-col">
-
-    <h3 className="font-semibold mb-4">
-
-      Motivos de riesgo
-
-    </h3>
-
-    <div className="flex-1 flex flex-col justify-center">
-
-      <ResponsiveContainer width="100%" height={300}>
-
-        <PieChart>
-
-          <Pie
-            data={data}
-            cx="50%"
-            cy="42%"
-            innerRadius={65}
-            outerRadius={95}
-            paddingAngle={2}
-            dataKey="value"
-            nameKey="name"
-          >
-
-            {data.map((entry: any) => (
-
-              <Cell
-                key={`cell-${entry.name}`}
-                fill={entry.color}
-              />
-
-            ))}
-
-          </Pie>
-
-          <Legend
-            verticalAlign="bottom"
-            align="center"
-            wrapperStyle={{
-              fontSize: "14px",
-              paddingTop: "10px"
-            }}
-            formatter={(value, entry: any) =>
-              `${value}: ${entry.payload.value}`
-            }
-          />
-
-        </PieChart>
-
-      </ResponsiveContainer>
-
-    </div>
-
-  </div>
-
-);
-
+import { PieChart,Pie,Cell,ResponsiveContainer,Tooltip } from 'recharts';
+import type { ResumenInicio } from '../tipos/inicio';
+const colores=['#1F6662','#986314','#B83F4B','#227F78','#5D7796','#8A6A9E'];
+function GraficaMotivosInicio({motivos,total}:{motivos:ResumenInicio['motivos'];total:number}){
+  return <section className="grafica-inicio-coordinacion" aria-labelledby="titulo-motivos-inicio"><h3 id="titulo-motivos-inicio">Motivos de reportes registrados</h3><p className="nota-inicio-coordinacion">{total} reportes de todos los periodos</p>
+    {!motivos.length?<p className="vacio-inicio-coordinacion">No hay reportes registrados.</p>:<>
+      <ResponsiveContainer width="100%" height={240}><PieChart><Pie data={motivos} dataKey="cantidad" nameKey="nombre" cx="50%" cy="50%" innerRadius={58} outerRadius={82}>{motivos.map((motivo,indice)=><Cell key={motivo.id} fill={colores[indice%colores.length]}/>)}</Pie><Tooltip/></PieChart></ResponsiveContainer>
+      <ul>{motivos.map((motivo,indice)=><li key={motivo.id}><span><i style={{background:colores[indice%colores.length]}}/>{motivo.nombre}</span><strong>{motivo.cantidad} ({motivo.porcentaje}%)</strong></li>)}</ul>
+    </>}
+  </section>;
 }
+export { GraficaMotivosInicio as RiskChart };

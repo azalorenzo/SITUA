@@ -1,0 +1,22 @@
+meta {
+  name: Consultar horarios del tutor
+  type: http
+  seq: 21
+}
+
+get {
+  url: {{url_api}}/tutor/horarios
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{token_tutor}}
+}
+
+tests {
+  test("Devuelve la lista del tutor conectado", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.be.an("array");
+  });
+}

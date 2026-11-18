@@ -1,0 +1,22 @@
+meta {
+  name: Eliminar horario del tutor
+  type: http
+  seq: 24
+}
+
+delete {
+  url: {{url_api}}/tutor/horarios/{{horario_id}}
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{token_tutor}}
+}
+
+tests {
+  test("Elimina el horario creado", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().eliminado).to.equal(true);
+  });
+}

@@ -1,0 +1,31 @@
+meta {
+  name: Crear horario del tutor
+  type: http
+  seq: 22
+}
+
+post {
+  url: {{url_api}}/tutor/horarios
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token_tutor}}
+}
+
+body:json {
+  {"inicioEn":"2031-03-10T16:00:00","finEn":"2031-03-10T17:00:00","ubicacion":"Aula 301"}
+}
+
+script:post-response {
+  if (res.getStatus() === 201) bru.setVar("horario_id", res.getBody().id);
+}
+
+tests {
+  test("Crea un horario presencial", function () {
+    expect(res.getStatus()).to.equal(201);
+    expect(res.getBody().modalidad).to.equal("presencial");
+  });
+}

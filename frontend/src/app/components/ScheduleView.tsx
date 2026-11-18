@@ -1,5 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Plus, Edit, Trash2, Clock, Calendar, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ErrorSolicitud } from '../servicios/autenticacion';
+import { consultarHorarios, crearHorario, editarHorario, eliminarHorario, aFechaHoraUtc, formatearFecha, formatearHora, ubicacionMostrada } from '../servicios/horarios';
+import type { Horario } from '../tipos/horarios';
 
 interface TimeSlot {
   id: number;
@@ -9,6 +12,20 @@ interface TimeSlot {
   location: string;
   type: 'disponible' | 'ocupado';
   studentName?: string;
+}
+
+// El backend es la única fuente real: esta función solo cambia la forma de los
+// datos para que el resto de la pantalla, ya hecha, no tenga que cambiar.
+function horarioATimeSlot(horario: Horario): TimeSlot {
+  return {
+    id: horario.id,
+    date: formatearFecha(horario.inicioEn),
+    startTime: formatearHora(horario.inicioEn),
+    endTime: formatearHora(horario.finEn),
+    location: ubicacionMostrada(horario),
+    type: horario.estudianteNombre ? 'ocupado' : 'disponible',
+    studentName: horario.estudianteNombre || undefined,
+  };
 }
 
 const MESES = [
@@ -26,7 +43,24 @@ export function ScheduleView() {
   const today = new Date();
 
   const [schedules, setSchedules] =
-    useState<TimeSlot[]>([{ id: 1, date: toYMD(today), startTime: '10:00', endTime: '11:00', location: 'Aula 301', type: 'ocupado', studentName: 'Ana Laura Gómez' }, { id: 2, date: toYMD(today), startTime: '12:00', endTime: '13:00', location: 'Virtual', type: 'disponible' }]);
+    useState<TimeSlot[]>([]);
+
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const comprobacion = new AbortController();
+    setCargando(true);
+    setError(null);
+    consultarHorarios(comprobacion.signal)
+      .then(horarios => setSchedules(horarios.map(horarioATimeSlot)))
+      .catch(motivo => {
+        if (comprobacion.signal.aborted) return;
+        setError(motivo instanceof ErrorSolicitud ? motivo.message : 'No se pudieron cargar tus horarios.');
+      })
+      .finally(() => { if (!comprobacion.signal.aborted) setCargando(false); });
+    return () => comprobacion.abort();
+  }, []);
 
   const [currentYear, setCurrentYear] =
     useState(today.getFullYear());
@@ -85,28 +119,47 @@ export function ScheduleView() {
   const slotsForDate = (d: string) => schedules.filter(s => s.date === d);
 
   // ── CRUD ──────────────────────────────────────────────────────────────────
-  const handleAdd = () => {
+  const mensajeError = (motivo: unknown, porDefecto: string) =>
+    motivo instanceof ErrorSolicitud ? motivo.message : porDefecto;
+
+  const handleAdd = async () => {
     if (!startTime || !endTime || !location) { alert('Completa todos los campos'); return; }
-    const newSlot: TimeSlot = {
-      id: Date.now(),
-      date: selectedDate,
-      startTime, endTime, location,
-      type: 'disponible'
-    };
-    setSchedules(prev => [...prev, newSlot]);
-    resetForm(); setShowAddModal(false);
+    try {
+      const horario = await crearHorario({
+        inicioEn: aFechaHoraUtc(selectedDate, startTime),
+        finEn: aFechaHoraUtc(selectedDate, endTime),
+        ubicacion: location,
+      });
+      setSchedules(prev => [...prev, horarioATimeSlot(horario)]);
+      resetForm(); setShowAddModal(false);
+    } catch (motivo) {
+      alert(mensajeError(motivo, 'No se pudo agregar el horario.'));
+    }
   };
 
-  const handleEdit = () => {
+  const handleEdit = async () => {
     if (!editingSlot || !startTime || !endTime || !location) { alert('Completa todos los campos'); return; }
-    setSchedules(prev => prev.map(s =>
-      s.id === editingSlot.id ? { ...s, startTime, endTime, location } : s
-    ));
-    resetForm(); setEditingSlot(null);
+    try {
+      const horario = await editarHorario(editingSlot.id, {
+        inicioEn: aFechaHoraUtc(editingSlot.date, startTime),
+        finEn: aFechaHoraUtc(editingSlot.date, endTime),
+        ubicacion: location,
+      });
+      setSchedules(prev => prev.map(s => s.id === editingSlot.id ? horarioATimeSlot(horario) : s));
+      resetForm(); setEditingSlot(null);
+    } catch (motivo) {
+      alert(mensajeError(motivo, 'No se pudo guardar el cambio.'));
+    }
   };
 
-  const handleDelete = (id: number) => {
-    if (confirm('¿Eliminar este horario?')) setSchedules(prev => prev.filter(s => s.id !== id));
+  const handleDelete = async (id: number) => {
+    if (!confirm('¿Eliminar este horario?')) return;
+    try {
+      await eliminarHorario(id);
+      setSchedules(prev => prev.filter(s => s.id !== id));
+    } catch (motivo) {
+      alert(mensajeError(motivo, 'No se pudo eliminar el horario.'));
+    }
   };
 
   const openEdit = (slot: TimeSlot) => {
@@ -131,7 +184,8 @@ export function ScheduleView() {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="font-semibold mb-1">Mis horarios</h2>
-          
+          {cargando && <p className="text-xs text-[#53716E]">Cargando horarios…</p>}
+          {error && <p className="text-xs text-[#B83F4B]">{error}</p>}
         </div>
         
       </div>

@@ -1,6 +1,7 @@
 import type { UsuarioSesion } from '../tipos/autenticacion';
 import { useState } from 'react';
 
+import { CompletarPerfilEstudiante } from './CompletarPerfilEstudiante';
 import { StudentSidebar } from './StudentSidebar';
 
 import { StudentView } from './StudentView';
@@ -20,6 +21,7 @@ export function StudentApp({ onLogout, usuario }: { onLogout: () => void; usuari
 
     <div className="flex h-screen bg-[#F5F7FA] text-[#0B2828]">
 
+      <CompletarPerfilEstudiante alSalir={onLogout}/>
       <StudentSidebar onLogout={onLogout} correoUsuario={usuario.correo} avatarUsuario={usuario.avatarUrl}
         activeSection={activeSection}
         onSectionChange={setActiveSection}

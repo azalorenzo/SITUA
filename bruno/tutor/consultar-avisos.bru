@@ -1,0 +1,26 @@
+meta {
+  name: Consultar avisos del tutor
+  type: http
+  seq: 25
+}
+
+get {
+  url: {{url_api}}/tutor/avisos
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{token_tutor}}
+}
+
+script:post-response {
+  if (res.getStatus() === 200 && res.getBody().length > 0) bru.setVar("aviso_id", res.getBody()[0].id);
+}
+
+tests {
+  test("Devuelve los avisos visibles del tutor conectado", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.be.an("array");
+  });
+}

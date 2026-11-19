@@ -1,6 +1,9 @@
-import { mockNotices } from '../mock/data';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Bell, CheckCircle, AlertCircle, Calendar, Users, FileText, MessageSquare, Clock, Info } from 'lucide-react';
+import { ErrorSolicitud } from '../servicios/autenticacion';
+import { consultarAvisosRecibidos, marcarAvisoLeido, marcarAvisosLeidos } from '../servicios/avisosRecibidos';
+import type { AvisoRecibido } from '../tipos/avisosRecibidos';
+import { EstadoConsulta, usarConsultaCoordinacion } from './ConsultaCoordinacion';
 
 interface Notification {
   id: number;
@@ -13,9 +16,35 @@ interface Notification {
   isImportant: boolean;
   read: boolean;
 }
+
+// El backend guarda las fechas en UTC sin zona; aquí se muestran en la hora del navegador.
+function aNotificacion(aviso: AvisoRecibido): Notification {
+  const publicado = new Date(`${aviso.publicadoEn}Z`);
+  return {
+    id: aviso.id,
+    idSesion: aviso.sesionId ? String(aviso.sesionId) : undefined,
+    type: aviso.prioridad === 'alta' ? 'alert' : aviso.prioridad === 'media' ? 'warning' : 'info',
+    title: aviso.titulo,
+    message: aviso.descripcion,
+    date: publicado.toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' }),
+    time: publicado.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false }),
+    isImportant: aviso.prioridad === 'alta',
+    read: aviso.leidoEn !== null
+  };
+}
+
+async function consultarNotificaciones(comprobacion: AbortSignal) {
+  return (await consultarAvisosRecibidos(comprobacion)).map(aNotificacion);
+}
+
+function textoDeError(fallo: unknown): string {
+  return fallo instanceof ErrorSolicitud || fallo instanceof Error ? fallo.message : 'No se pudo completar la acción.';
+}
+
 export function TutorNotificationsView() {
-  
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotices.map(n => ({ id: Number(n.id_aviso), title: n.id_aviso === '1' ? 'Nueva solicitud de tutoría' : n.titulo, idSesion: n.id_aviso === '1' ? '2' : undefined, message: n.descripcion, type: n.prioridad === 'Alta' ? 'alert' : 'info', isImportant: n.prioridad === 'Alta', date: 'Junio 2026', time: '09:00', read: n.leido })));
+  const consulta = usarConsultaCoordinacion<Notification>(consultarNotificaciones);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  useEffect(() => { setNotifications(consulta.datos); }, [consulta.datos]);
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'success':
@@ -71,10 +100,24 @@ export function TutorNotificationsView() {
     notifications.filter(
       n => n.isImportant
   ).length;
-  const marcarComoLeida = (id: number) => setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  const marcarComoLeida = async (id: number) => {
+    try {
+      await marcarAvisoLeido(id);
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    } catch (fallo) {
+      alert(textoDeError(fallo));
+    }
+  };
   const aceptarSesion = (_idSesion: string, idAviso: number) => setNotifications(prev => prev.filter(n => n.id !== idAviso));
   const rechazarSesion = (_idSesion: string, idAviso: number) => setNotifications(prev => prev.filter(n => n.id !== idAviso));
-  const marcarTodasLeidas = () => setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  const marcarTodasLeidas = async () => {
+    try {
+      await marcarAvisosLeidos();
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    } catch (fallo) {
+      alert(textoDeError(fallo));
+    }
+  };
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -90,6 +133,8 @@ export function TutorNotificationsView() {
   Marcar todas como leídas
 </button>
       </div>
+
+      <EstadoConsulta cargando={consulta.cargando} error={consulta.error} alReintentar={consulta.actualizar} />
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -235,8 +280,8 @@ export function TutorNotificationsView() {
         </div>
       </div>
 
-      {/* Empty State (commented for reference) */}
-      {/* {notifications.length === 0 && (
+      {/* Empty State */}
+      {!consulta.cargando && !consulta.error && notifications.length === 0 && (
         <div className="bg-white rounded-lg p-12 text-center shadow-sm">
           <div className="w-16 h-16 bg-[#DCE3EA] rounded-full flex items-center justify-center mx-auto mb-4">
             <Bell className="w-8 h-8 text-[#53716E]" />
@@ -244,7 +289,7 @@ export function TutorNotificationsView() {
           <h3 className="font-semibold mb-2">No tienes notificaciones</h3>
           <p className="text-[#53716E]">Cuando recibas avisos, aparecerán aquí</p>
         </div>
-      )} */}
+      )}
     </div>
   );
 }

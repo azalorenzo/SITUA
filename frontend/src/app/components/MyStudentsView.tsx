@@ -1,12 +1,50 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Search, Filter, Eye, Calendar, X, Clock, FileText, AlertCircle, TrendingUp, CheckCircle, Loader2 } from 'lucide-react';
+import { ErrorSolicitud } from '../servicios/autenticacion';
+import { consultarDetalleEstudianteTutor, consultarEstudiantesTutor } from '../servicios/estudiantesTutor';
+import type { EstudianteTutor, ObservacionEstudianteTutor, SesionEstudianteTutor } from '../tipos/estudiantesTutor';
+import { EstadoConsulta, usarConsultaCoordinacion } from './ConsultaCoordinacion';
 
+// Fecha de hoy en la zona del navegador, para que el día no cambie de noche por usar UTC.
+function fechaLocal(): string {
+  const hoy = new Date();
+  return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
+}
 
-// Detecta el periodo según el mes actual
-function getPeriodo(): string {
-  const mes = new Date().getMonth() + 1; // 1-12
-  if (mes >= 1 && mes <= 6) return 'Enero – Junio ' + new Date().getFullYear();
-  return 'Agosto – Diciembre ' + new Date().getFullYear();
+// El backend guarda las fechas en UTC sin zona; aquí se muestran en la hora del navegador.
+function formatearFecha(utc: string | null): string {
+  return utc ? new Date(`${utc}Z`).toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' }) : '—';
+}
+
+const ORDINALES: Record<number, string> = { 1: '1er', 2: '2do', 3: '3er', 4: '4to', 5: '5to', 6: '6to', 7: '7mo', 8: '8vo', 9: '9no', 10: '10mo', 11: '11vo', 12: '12vo' };
+
+function etiquetaSemestre(semestre: number | null): string {
+  return semestre ? `${ORDINALES[semestre] ?? `${semestre}º`} Semestre` : '—';
+}
+
+function etiquetaRiesgo(nivel: EstudianteTutor['nivelRiesgo']): string {
+  switch (nivel) {
+    case 'alto': return 'Alto';
+    case 'medio': return 'Medio';
+    case 'bajo': return 'Bajo';
+    case 'sin_riesgo': return 'Sin riesgo';
+    default: return 'Sin evaluar';
+  }
+}
+
+function etiquetaDuracion(minutos: number): string {
+  if (minutos < 60) return `${minutos} min`;
+  const horas = Math.round((minutos / 60) * 10) / 10;
+  return horas === 1 ? '1 hora' : `${horas} horas`;
+}
+
+function formatoPromedio(promedio: number | null): string {
+  return promedio === null ? '—' : promedio.toFixed(1);
+}
+
+function textoDeError(fallo: unknown): string {
+  if (fallo instanceof ErrorSolicitud && fallo.estado === 401) return 'Tu sesión ya no es válida. Sal y vuelve a iniciar sesión.';
+  return fallo instanceof Error ? fallo.message : 'No se pudo cargar la información.';
 }
 
 interface Student {
@@ -14,13 +52,39 @@ interface Student {
   name: string;
   career: string;
   semester: string;
-  average: number;
-  riesgo: 'Alto' | 'Medio' | 'Bajo';
+  average: number | null;
+  riesgo: string;
   condicion: string;
   email: string;
   phone: string;
   tutoringSessions: number;
   lastSession: string;
+  periodo: string;
+}
+
+interface TutoringSession { date: string; topic: string; duration: string; notes: string; status: string; }
+interface Observation { date: string; type: string; text: string; priority: 'normal' | 'high'; }
+
+function aEstudiante(e: EstudianteTutor): Student {
+  return {
+    id: e.id, name: e.nombre, career: e.carrera, semester: etiquetaSemestre(e.semestre), average: e.promedio,
+    riesgo: etiquetaRiesgo(e.nivelRiesgo), condicion: e.condicion ?? '', email: e.correo, phone: e.telefono ?? '—',
+    tutoringSessions: e.sesionesCompletadas, lastSession: formatearFecha(e.ultimaSesion), periodo: e.periodo
+  };
+}
+
+function aSesion(s: SesionEstudianteTutor): TutoringSession {
+  return { date: formatearFecha(s.inicioEn), topic: s.tema, duration: etiquetaDuracion(s.duracionMinutos), notes: s.observaciones ?? '', status: 'Completada' };
+}
+
+const TIPOS_OBSERVACION = { nota: 'Nota', progreso: 'Progreso', alerta: 'Alerta' } as const;
+
+function aObservacion(o: ObservacionEstudianteTutor): Observation {
+  return { date: formatearFecha(o.observadoEn), type: TIPOS_OBSERVACION[o.tipo], text: o.contenido, priority: o.prioridad === 'alta' ? 'high' : 'normal' };
+}
+
+async function consultarMisEstudiantes(comprobacion: AbortSignal) {
+  return (await consultarEstudiantesTutor(comprobacion)).map(aEstudiante);
 }
 
 export function MyStudentsView() {
@@ -32,36 +96,39 @@ export function MyStudentsView() {
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [registerStudent, setRegisterStudent]     = useState<Student | null>(null);
   const [regTema, setRegTema]       = useState('');
-  const [regFecha, setRegFecha]     = useState(new Date().toISOString().split('T')[0]);
+  const [regFecha, setRegFecha]     = useState(fechaLocal());
   const [regGuardando, setRegGuardando] = useState(false);
   const [regExito, setRegExito]     = useState(false);
   const [regError, setRegError]     = useState('');
 
-  const periodo = getPeriodo();
+  const consulta = usarConsultaCoordinacion<Student>(consultarMisEstudiantes);
+  const students = consulta.datos;
 
-  const students: Student[] = [
-    { id: 1, name: 'Ana Laura Gómez',       career: 'Ingeniería en Software', semester: '4to Semestre', average: 7.2, riesgo: 'Bajo',  condicion: 'Materias en curso normal',                                              email: 'ana.gomez@universidad.edu',      phone: '555-0101', tutoringSessions: 8,  lastSession: '15 mayo 2026' },
-    { id: 2, name: 'Carlos Méndez Ruiz',    career: 'Ingeniería Industrial',  semester: '5to Semestre', average: 8.1, riesgo: 'Medio', condicion: 'Materias en repetición',                                                email: 'carlos.mendez@universidad.edu',  phone: '555-0102', tutoringSessions: 12, lastSession: '18 mayo 2026' },
-    { id: 3, name: 'María Fernández López', career: 'Arquitectura',           semester: '3er Semestre', average: 8.5, riesgo: 'Medio', condicion: '2 materias reprobadas',                                                 email: 'maria.fernandez@universidad.edu',phone: '555-0103', tutoringSessions: 6,  lastSession: '20 mayo 2026' },
-    { id: 4, name: 'Roberto Silva García',  career: 'Diseño Gráfico',         semester: '6to Semestre', average: 9.2, riesgo: 'Alto',  condicion: 'Materia en segundo recurso / especial',                                 email: 'roberto.silva@universidad.edu',  phone: '555-0104', tutoringSessions: 15, lastSession: '22 mayo 2026' },
-    { id: 5, name: 'Laura Hernández Cruz',  career: 'Ingeniería en Software', semester: '4to Semestre', average: 9.0, riesgo: 'Alto',  condicion: 'Más de dos materias reprobadas',                                        email: 'laura.hernandez@universidad.edu',phone: '555-0105', tutoringSessions: 10, lastSession: '21 mayo 2026' },
-    { id: 6, name: 'Pedro Sánchez Ruiz',    career: 'Ingeniería Civil',       semester: '5to Semestre', average: 7.5, riesgo: 'Bajo',  condicion: 'Materias en curso normal',                                              email: 'pedro.sanchez@universidad.edu',  phone: '555-0106', tutoringSessions: 9,  lastSession: '19 mayo 2026' },
-    { id: 7, name: 'Diana Morales Torres',  career: 'Administración',         semester: '3er Semestre', average: 8.3, riesgo: 'Medio', condicion: 'Materias en repetición y 1 materia reprobada',                          email: 'diana.morales@universidad.edu',  phone: '555-0107', tutoringSessions: 7,  lastSession: '17 mayo 2026' },
-    { id: 8, name: 'Miguel Ángel Vargas',   career: 'Ingeniería Mecánica',    semester: '6to Semestre', average: 8.8, riesgo: 'Alto',  condicion: 'Materia en segundo recurso / especial y más de dos materias reprobadas', email: 'miguel.vargas@universidad.edu',  phone: '555-0108', tutoringSessions: 14, lastSession: '23 mayo 2026' },
-  ];
+  // El periodo lo trae cada estudiante desde el catálogo; los dos modales nunca están abiertos a la vez.
+  const periodo = (selectedStudent ?? registerStudent)?.periodo ?? '';
 
-  const tutoringHistory = [
-    { date: '15 mayo 2026', topic: 'Cálculo diferencial', duration: '1 hora',   notes: 'Estudiante muestra dificultad en derivadas. Se recomienda práctica adicional.', status: 'Completada' },
-    { date: '8 mayo 2026',  topic: 'Álgebra lineal',      duration: '1.5 horas', notes: 'Buena comprensión de matrices. Necesita refuerzo en determinantes.',             status: 'Completada' },
-    { date: '1 mayo 2026',  topic: 'Programación básica', duration: '2 horas',   notes: 'Excelente progreso en estructuras de control. Se avanzó a funciones.',           status: 'Completada' },
-    { date: '24 abril 2026',topic: 'Física I',             duration: '1 hora',   notes: 'Revisión de cinemática. Estudiante logró resolver problemas complejos.',          status: 'Completada' },
-  ];
+  // El detalle (sesiones y observaciones) se consulta al abrir "Ver detalle".
+  const [tutoringHistory, setTutoringHistory] = useState<TutoringSession[]>([]);
+  const [observations, setObservations] = useState<Observation[]>([]);
+  const [cargandoDetalle, setCargandoDetalle] = useState(false);
+  const [errorDetalle, setErrorDetalle] = useState('');
+  const [intentoDetalle, setIntentoDetalle] = useState(0);
+  const idDetalle = selectedStudent?.id ?? null;
 
-  const observations = [
-    { date: '18 mayo 2026', type: 'Progreso', text: 'El estudiante ha mostrado mejora significativa en las últimas 2 semanas.', priority: 'normal' },
-    { date: '10 mayo 2026', type: 'Alerta',   text: 'Requiere atención especial en matemáticas. Promedio bajo en últimos exámenes.', priority: 'high' },
-    { date: '3 mayo 2026',  type: 'Nota',     text: 'Estudiante interesado en proyectos extracurriculares de programación.', priority: 'normal' },
-  ];
+  useEffect(() => {
+    setTutoringHistory([]); setObservations([]); setErrorDetalle('');
+    if (idDetalle === null) { setCargandoDetalle(false); return; }
+    const cancelacion = new AbortController();
+    setCargandoDetalle(true);
+    consultarDetalleEstudianteTutor(idDetalle, cancelacion.signal).then(detalle => {
+      if (cancelacion.signal.aborted) return;
+      setTutoringHistory(detalle.sesiones.map(aSesion));
+      setObservations(detalle.observaciones.map(aObservacion));
+    }).catch(fallo => {
+      if (!cancelacion.signal.aborted) setErrorDetalle(textoDeError(fallo));
+    }).finally(() => { if (!cancelacion.signal.aborted) setCargandoDetalle(false); });
+    return () => cancelacion.abort();
+  }, [idDetalle, intentoDetalle]);
 
   const getRiesgoColor = (riesgo: string) => {
     switch (riesgo) {
@@ -72,7 +139,8 @@ export function MyStudentsView() {
     }
   };
 
-  const getAverageColor = (avg: number) => {
+  const getAverageColor = (avg: number | null) => {
+    if (avg === null) return 'text-[#53716E]';
     if (avg >= 9) return 'text-[#227F78]';
     if (avg >= 8) return 'text-[#986314]';
     return 'text-[#B83F4B]';
@@ -89,7 +157,7 @@ export function MyStudentsView() {
   const openRegister = (student: Student) => {
     setRegisterStudent(student);
     setRegTema('');
-    setRegFecha(new Date().toISOString().split('T')[0]);
+    setRegFecha(fechaLocal());
     setRegGuardando(false);
     setRegExito(false);
     setRegError('');
@@ -115,6 +183,8 @@ export function MyStudentsView() {
           Total: <span className="font-semibold">{students.length}</span> estudiantes
         </span>
       </div>
+
+      <EstadoConsulta cargando={consulta.cargando} error={consulta.error} alReintentar={consulta.actualizar} />
 
       {/* Search and Filters */}
       <div className="bg-white rounded-lg p-6 shadow-sm">
@@ -177,7 +247,7 @@ export function MyStudentsView() {
                   <td className="py-4 px-6 text-sm text-[#0B2828]">{student.semester}</td>
                   <td className="py-4 px-6">
                     <span className={`font-semibold ${getAverageColor(student.average)}`}>
-                      {student.average.toFixed(1)}
+                      {formatoPromedio(student.average)}
                     </span>
                   </td>
                   <td className="py-4 px-6">
@@ -212,7 +282,7 @@ export function MyStudentsView() {
           </table>
         </div>
 
-        {filteredStudents.length === 0 && (
+        {!consulta.cargando && !consulta.error && filteredStudents.length === 0 && (
           <div className="text-center py-12">
             <p className="text-[#53716E]">No se encontraron estudiantes con estos criterios.</p>
           </div>
@@ -239,7 +309,7 @@ export function MyStudentsView() {
                       <span className="text-xs text-[#53716E] italic">{selectedStudent.condicion}</span>
                     <span className="text-sm text-[#53716E]">
                       Promedio: <span className={`font-semibold ${getAverageColor(selectedStudent.average)}`}>
-                        {selectedStudent.average.toFixed(1)}
+                        {formatoPromedio(selectedStudent.average)}
                       </span>
                     </span>
                     {/* PERIODO */}
@@ -257,6 +327,8 @@ export function MyStudentsView() {
 
             {/* Body */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              <EstadoConsulta cargando={cargandoDetalle} error={errorDetalle} alReintentar={() => setIntentoDetalle(anterior => anterior + 1)} />
+
               {/* Stats row */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="bg-[#F2FBF9] rounded-lg p-4">
@@ -323,7 +395,7 @@ export function MyStudentsView() {
                           {session.status}
                         </span>
                       </div>
-                      <p className="text-sm text-[#53716E] mt-2">{session.notes}</p>
+                      {session.notes && <p className="text-sm text-[#53716E] mt-2">{session.notes}</p>}
                     </div>
                   ))}
                 </div>

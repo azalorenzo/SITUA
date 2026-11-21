@@ -1,0 +1,23 @@
+meta {
+  name: Consultar detalle de un estudiante del tutor
+  type: http
+  seq: 29
+}
+
+get {
+  url: {{url_api}}/tutor/estudiantes/{{estudiante_id}}
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{token_tutor}}
+}
+
+tests {
+  test("Devuelve el estudiante con sus sesiones y observaciones", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().sesiones).to.be.an("array");
+    expect(res.getBody().observaciones).to.be.an("array");
+  });
+}

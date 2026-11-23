@@ -52,28 +52,27 @@ public class RepositorioDisponibilidad {
     }
 
     public boolean perteneceATutor(long id, long tutorId) {
-        Long total = consultas.queryForObject(
-                "SELECT COUNT(*) FROM disponibilidades_tutor WHERE id = ? AND tutor_id = ?",
-                Long.class, id, tutorId);
-        return total != null && total == 1;
+        return !consultas.query("SELECT id FROM disponibilidades_tutor WHERE id=? AND tutor_id=? FOR UPDATE",
+                (fila,posicion)->fila.getLong(1),id,tutorId).isEmpty();
     }
 
     // Evita que un mismo tutor registre dos horarios que se encimen. excluirId se usa al
     // editar, para no comparar el horario consigo mismo.
     public boolean seCruzaConOtro(long tutorId, LocalDateTime inicioEn, LocalDateTime finEn, Long excluirId) {
-        Long total = consultas.queryForObject("""
-                SELECT COUNT(*) FROM disponibilidades_tutor
-                WHERE tutor_id = ? AND (? IS NULL OR id <> ?) AND inicio_en < ? AND fin_en > ?
-                """, Long.class, tutorId, excluirId, excluirId, finEn, inicioEn);
-        return total != null && total > 0;
+        return !consultas.query("""
+                SELECT id FROM disponibilidades_tutor
+                WHERE tutor_id=? AND (? IS NULL OR id<>?) AND inicio_en<? AND fin_en>? FOR UPDATE
+                """,(fila,posicion)->fila.getLong(1),tutorId,excluirId,excluirId,finEn,inicioEn).isEmpty();
     }
 
     // Una vez que un horario tiene alguna sesión (incluso pasada), ya no se edita ni se
     // elimina: se conserva como parte del historial de esa sesión.
     public boolean tieneSesionAsociada(long id) {
-        Long total = consultas.queryForObject(
-                "SELECT COUNT(*) FROM sesiones WHERE disponibilidad_id = ?", Long.class, id);
-        return total != null && total > 0;
+        return !consultas.query("SELECT id FROM sesiones WHERE disponibilidad_id=? FOR SHARE",(fila,posicion)->fila.getLong(1),id).isEmpty();
+    }
+
+    public void bloquearTutor(long tutorId) {
+        consultas.query("SELECT id FROM tutores WHERE id=? FOR UPDATE",(fila,posicion)->fila.getLong(1),tutorId);
     }
 
     public long crear(long tutorId, LocalDateTime inicioEn, LocalDateTime finEn, String modalidad,

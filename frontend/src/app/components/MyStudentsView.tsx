@@ -1,3 +1,4 @@
+import { RegistroSesionModal } from './RegistroSesionModal';
 import { useEffect, useState } from 'react';
 import { Search, Filter, Eye, Calendar, X, Clock, FileText, AlertCircle, TrendingUp, CheckCircle, Loader2 } from 'lucide-react';
 import { ErrorSolicitud } from '../servicios/autenticacion';
@@ -95,12 +96,6 @@ export function MyStudentsView() {
   // Modal Registrar
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [registerStudent, setRegisterStudent]     = useState<Student | null>(null);
-  const [regTema, setRegTema]       = useState('');
-  const [regFecha, setRegFecha]     = useState(fechaLocal());
-  const [regGuardando, setRegGuardando] = useState(false);
-  const [regExito, setRegExito]     = useState(false);
-  const [regError, setRegError]     = useState('');
-
   const consulta = usarConsultaCoordinacion<Student>(consultarMisEstudiantes);
   const students = consulta.datos;
 
@@ -155,20 +150,7 @@ export function MyStudentsView() {
 
   // ── Abrir modal registrar ───────────────────────────────────────────────────
   const openRegister = (student: Student) => {
-    setRegisterStudent(student);
-    setRegTema('');
-    setRegFecha(fechaLocal());
-    setRegGuardando(false);
-    setRegExito(false);
-    setRegError('');
-    setShowRegisterModal(true);
-  };
-
-  const handleRegistrar = () => {
-    if (!regTema.trim()) { setRegError('El tema es obligatorio.'); return; }
-    if (!regFecha) { setRegError('La fecha es obligatoria.'); return; }
-    setRegError(''); setRegExito(true);
-    setTimeout(() => { setShowRegisterModal(false); setRegExito(false); }, 1800);
+    setSelectedStudent(null);setRegisterStudent(student);setShowRegisterModal(true);
   };
 
   return (
@@ -443,77 +425,7 @@ export function MyStudentsView() {
         </div>
       )}
 
-      {/* ── Modal Registrar Sesión ────────────────────────────────────────────── */}
-      {showRegisterModal && registerStudent && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <div className="flex justify-between items-start mb-5">
-              <div>
-                <h3 className="font-semibold">Registrar tutoría</h3>
-                <p className="text-sm text-[#53716E] mt-0.5">{registerStudent.name}</p>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-[#D3F4EE] text-[#1C4543] inline-block mt-1">
-                  Periodo: {periodo}
-                </span>
-              </div>
-              <button onClick={() => setShowRegisterModal(false)} className="text-[#53716E] hover:text-[#53716E]">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {regExito ? (
-              <div className="flex flex-col items-center py-8 gap-3 text-[#227F78]">
-                <CheckCircle className="w-12 h-12" />
-                <p className="font-semibold">¡Sesión registrada correctamente!</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-[#0B2828] mb-1">Tema de la sesión</label>
-                  <input
-                    type="text"
-                    value={regTema}
-                    onChange={e => setRegTema(e.target.value)}
-                    placeholder="Ej: Cálculo diferencial, Álgebra lineal..."
-                    className="w-full border border-[#DCE3EA] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1F6662]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#0B2828] mb-1">Fecha</label>
-                  <input
-                    type="date"
-                    value={regFecha}
-                    onChange={e => setRegFecha(e.target.value)}
-                    className="w-full border border-[#DCE3EA] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1F6662]"
-                  />
-                </div>
-
-                {regError && (
-                  <p className="text-sm text-[#B83F4B] bg-[#FCEBED] rounded-lg px-3 py-2">{regError}</p>
-                )}
-
-                <div className="flex gap-3 pt-2">
-                  <button
-                    onClick={() => setShowRegisterModal(false)}
-                    className="flex-1 px-4 py-2 border border-[#DCE3EA] text-[#0B2828] rounded-lg hover:bg-[#F5F7FA]"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    onClick={handleRegistrar}
-                    disabled={regGuardando}
-                    className="flex-1 px-4 py-2 bg-[#227F78] text-white rounded-lg hover:bg-[#227F78] disabled:opacity-60 flex items-center justify-center gap-2"
-                  >
-                    {regGuardando
-                      ? <><Loader2 className="w-4 h-4 animate-spin" /> Guardando...</>
-                      : <><Calendar className="w-4 h-4" /> Registrar</>
-                    }
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {showRegisterModal&&registerStudent&&<RegistroSesionModal estudianteId={registerStudent.id} nombre={registerStudent.name} alCerrar={()=>setShowRegisterModal(false)} alGuardar={()=>{setShowRegisterModal(false);consulta.actualizar();}}/>}
     </div>
   );
 }

@@ -1,0 +1,2 @@
+export interface AnalisisTutor {total:number;completados:number;pendientes:number;estudiantes:number;promedio:number|null;horas:number;asistencia:number|null;rendimiento:{mes:string;promedio:number|null}[];progreso:{estudiante:string;inicial:number|null;actual:number|null}[];}
+export interface DatosReporteTutor {estudianteId:number;periodoId:number;sesionId:number|null;motivoId:number;fecha:string;contenido:string;estado:'pendiente'|'completado';}

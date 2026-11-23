@@ -68,4 +68,17 @@ public class RepositorioReportes {
         return parametros.query(COLUMNAS+BASE+CONDICIONES+" ORDER BY r.fecha DESC,r.id DESC",valores(filtros),convertir);
     }
     public Optional<RespuestaReporte> buscar(long id){return consultas.query(COLUMNAS+BASE+" WHERE r.id=?",convertir,id).stream().findFirst();}
+
+    public PaginaReportes.Resumen resumenTutor(long tutor,FiltrosReportes filtros){
+        return parametros.queryForObject("SELECT COUNT(*) total,COALESCE(SUM(r.estado='completado'),0) completados,COALESCE(SUM(r.estado='pendiente'),0) pendientes "+BASE+CONDICIONES+" AND r.tutor_id=:tutor",
+            valores(filtros).addValue("tutor",tutor),(fila,posicion)->new PaginaReportes.Resumen(fila.getLong("total"),fila.getLong("completados"),fila.getLong("pendientes")));
+    }
+    public List<RespuestaReporte> listarTutor(long tutor,FiltrosReportes filtros,int pagina){
+        return parametros.query(COLUMNAS+BASE+CONDICIONES+" AND r.tutor_id=:tutor ORDER BY r.fecha DESC,r.id DESC LIMIT :tamano OFFSET :desplazamiento",
+            valores(filtros).addValue("tutor",tutor).addValue("tamano",filtros.tamano()).addValue("desplazamiento",(pagina-1L)*filtros.tamano()),convertir);
+    }
+    public List<RespuestaReporte> exportarTutor(long tutor,FiltrosReportes filtros){
+        return parametros.query(COLUMNAS+BASE+CONDICIONES+" AND r.tutor_id=:tutor ORDER BY r.fecha DESC,r.id DESC",valores(filtros).addValue("tutor",tutor),convertir);
+    }
+    public Optional<RespuestaReporte> buscarTutor(long id,long tutor){return consultas.query(COLUMNAS+BASE+" WHERE r.id=? AND r.tutor_id=?",convertir,id,tutor).stream().findFirst();}
 }

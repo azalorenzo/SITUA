@@ -73,6 +73,7 @@ public class ServicioHorarios {
     @Transactional
     public RespuestaHorario crear(SolicitudHorario solicitud, String identificador) {
         long tutorId = verificarTutor(identificador);
+        repositorio.bloquearTutor(tutorId);
         validarIntervalo(solicitud);
         Lugar lugar = clasificarUbicacion(solicitud.ubicacion());
         if (repositorio.seCruzaConOtro(tutorId, solicitud.inicioEn(), solicitud.finEn(), null)) {
@@ -86,6 +87,7 @@ public class ServicioHorarios {
     @Transactional
     public RespuestaHorario editar(long id, SolicitudHorario solicitud, String identificador) {
         long tutorId = verificarTutor(identificador);
+        repositorio.bloquearTutor(tutorId);
         if (!repositorio.perteneceATutor(id, tutorId)) {
             throw new AccesoRechazado(404, "No se encontró ese horario.");
         }
@@ -105,6 +107,7 @@ public class ServicioHorarios {
     @Transactional
     public void eliminar(long id, String identificador) {
         long tutorId = verificarTutor(identificador);
+        repositorio.bloquearTutor(tutorId);
         if (!repositorio.perteneceATutor(id, tutorId)) {
             throw new AccesoRechazado(404, "No se encontró ese horario.");
         }

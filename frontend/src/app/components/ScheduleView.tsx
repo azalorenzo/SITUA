@@ -1,3 +1,4 @@
+import { SesionesTutor } from './SesionesTutor';
 import { useEffect, useState } from 'react';
 import { Plus, Edit, Trash2, Clock, Calendar, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ErrorSolicitud } from '../servicios/autenticacion';
@@ -35,7 +36,7 @@ const MESES = [
 const DIAS_SEMANA = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
 
 function toYMD(date: Date): string {
-  return date.toISOString().split('T')[0];
+  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
 }
 
 export function ScheduleView() {
@@ -45,6 +46,7 @@ export function ScheduleView() {
   const [schedules, setSchedules] =
     useState<TimeSlot[]>([]);
 
+  const [intentoHorarios,cambiarIntentoHorarios]=useState(0);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,7 +62,7 @@ export function ScheduleView() {
       })
       .finally(() => { if (!comprobacion.signal.aborted) setCargando(false); });
     return () => comprobacion.abort();
-  }, []);
+  }, [intentoHorarios]);
 
   const [currentYear, setCurrentYear] =
     useState(today.getFullYear());
@@ -190,6 +192,7 @@ export function ScheduleView() {
         
       </div>
 
+      <SesionesTutor alCambiar={()=>cambiarIntentoHorarios(anterior=>anterior+1)}/>
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[

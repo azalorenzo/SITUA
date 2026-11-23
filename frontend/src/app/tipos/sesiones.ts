@@ -1,7 +1,7 @@
 export interface SesionAgenda {
   id:number;disponibilidadId:number|null;tutor:string;estudiante:string;tema:string;
   inicioEn:string;finEn:string;modalidad:'presencial'|'virtual';ubicacion:string|null;enlaceVirtual:string|null;
-  estado:'solicitada'|'confirmada'|'rechazada'|'cancelada'|'completada'|'no_asistio';periodoId:number;periodo:string;
+  estado:'solicitada'|'confirmada'|'rechazada'|'cancelada'|'completada'|'no_asistio'|'vencida';periodoId:number;periodo:string;
   mensajeSolicitud:string|null;puedeCancelar:boolean;puedeResponder:boolean;puedeRegistrar:boolean;observaciones:string|null;duracionMinutos:number;
 }
 export interface PaginaSesiones {contenido:SesionAgenda[];pagina:number;tamano:number;totalRegistros:number;totalPaginas:number;}

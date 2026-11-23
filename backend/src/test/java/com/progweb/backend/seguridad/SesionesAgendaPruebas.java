@@ -25,6 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest @Transactional
 class SesionesAgendaPruebas {
  @Autowired ServicioSesionesAgenda servicio;
+ @Autowired ServicioVencimientoSesiones vencimiento;
  @Autowired ServicioHorarios horarios;
  @Autowired RepositorioUsuarios usuarios;
  @Autowired RepositorioRoles roles;
@@ -163,4 +164,57 @@ class SesionesAgendaPruebas {
   cliente.perform(get("/api/estudiante/sesiones").header("Authorization","Bearer "+token(alumno,"estudiante")).param("estado","otro"))
    .andExpect(status().isUnprocessableEntity());
  }
+ @Test void venceAlLlegarLaHoraPeroNoAntes(){
+  var sesion=servicio.solicitar(id(alumno),solicitud(horario));
+  assertThat(vencimiento.vencerPropias(estudiante,false,inicio.minusNanos(1000))).isZero();
+  assertThat(vencimiento.vencerPropias(estudiante,false,inicio)).isEqualTo(1);
+  assertThat(consultas.queryForObject("SELECT estado FROM sesiones WHERE id=?",String.class,sesion.id())).isEqualTo("vencida");
+  assertThat(consultas.queryForObject("SELECT reserva_vigente FROM sesiones WHERE id=?",Long.class,sesion.id())).isNull();
+ }
+ @Test void consultarVencidasGuardaUnSoloCambioAutomatico() throws Exception {
+  var sesion=servicio.solicitar(id(alumno),solicitud(horario));
+  when(reloj.instant()).thenReturn(inicio.toInstant(ZoneOffset.UTC));
+  for(int intento=0;intento<2;intento++)cliente.perform(get("/api/estudiante/sesiones").param("estado","vencida").header("Authorization","Bearer "+token(alumno,"estudiante")))
+    .andExpect(status().isOk()).andExpect(jsonPath("$.totalRegistros").value(1)).andExpect(jsonPath("$.contenido[0].estado").value("vencida"))
+    .andExpect(jsonPath("$.contenido[0].puedeCancelar").value(false)).andExpect(jsonPath("$.contenido[0].puedeResponder").value(false))
+    .andExpect(jsonPath("$.contenido[0].puedeRegistrar").value(false));
+  assertThat(consultas.queryForObject("SELECT COUNT(*) FROM sesion_cambios WHERE sesion_id=? AND tipo='vencimiento' AND actor_id IS NULL AND estado_nuevo='vencida'",Long.class,sesion.id())).isEqualTo(1);
+  assertThat(consultas.queryForObject("SELECT ocurrido_en FROM sesion_cambios WHERE sesion_id=? AND tipo='vencimiento'",LocalDateTime.class,sesion.id())).isEqualTo(inicio);
+ }
+ @Test void lasConfirmadasNoVencen(){
+  var sesion=servicio.solicitar(id(alumno),solicitud(horario));
+  servicio.cambiar(id(profesor),true,sesion.id(),"confirmar");
+  assertThat(vencimiento.vencerPropias(tutor,true,inicio.plusHours(2))).isZero();
+  when(reloj.instant()).thenReturn(inicio.plusHours(2).toInstant(ZoneOffset.UTC));
+  var confirmadas=servicio.listar(id(profesor),true,"confirmada",null,null,1,5);
+  assertThat(confirmadas.contenido()).hasSize(1);
+  assertThat(confirmadas.contenido().getFirst().puedeRegistrar()).isTrue();
+ }
+ @Test void laConsultaSoloActualizaLasSolicitudesPropias(){
+  servicio.solicitar(id(alumno),solicitud(horario));
+  long otroHorario=crearHorario(tutor,inicio.plusHours(2),inicio.plusHours(3));
+  var otra=servicio.solicitar(id(otroAlumno),solicitud(otroHorario));
+  when(reloj.instant()).thenReturn(inicio.plusHours(4).toInstant(ZoneOffset.UTC));
+  assertThat(servicio.listar(id(alumno),false,"vencida",null,null,1,5).totalRegistros()).isEqualTo(1);
+  assertThat(consultas.queryForObject("SELECT estado FROM sesiones WHERE id=?",String.class,otra.id())).isEqualTo("solicitada");
+  assertThat(servicio.listar(id(profesor),true,"vencida",null,null,1,5).totalRegistros()).isEqualTo(2);
+  assertThat(servicio.listar(id(profesor),true,"solicitada",null,null,1,5).totalRegistros()).isZero();
+ }
+ @Test void agendaYResumenMuestranElVencimiento(){
+  var sesion=servicio.solicitar(id(alumno),solicitud(horario));
+  when(reloj.instant()).thenReturn(inicio.plusMinutes(1).toInstant(ZoneOffset.UTC));
+  assertThat(servicio.agenda(id(alumno),inicio.toLocalDate().atStartOfDay(),inicio.toLocalDate().plusDays(1).atStartOfDay()).getFirst().estado()).isEqualTo("vencida");
+  var resumen=servicio.resumen(id(alumno));
+  assertThat(resumen.proximas()).isEmpty();
+  assertThat(resumen.actividades().getFirst().estado()).isEqualTo("vencida");
+  assertThatThrownBy(()->servicio.cambiar(id(profesor),true,sesion.id(),"confirmar")).hasMessageContaining("ya no permite");
+ }
+ @Test void elProcesoAutomaticoNoRepiteVencimientos(){
+  var sesion=servicio.solicitar(id(alumno),solicitud(horario));
+  vencimiento.vencerPendientes(inicio);
+  vencimiento.vencerPendientes(inicio.plusHours(1));
+  assertThat(consultas.queryForObject("SELECT estado FROM sesiones WHERE id=?",String.class,sesion.id())).isEqualTo("vencida");
+  assertThat(consultas.queryForObject("SELECT COUNT(*) FROM sesion_cambios WHERE sesion_id=? AND tipo='vencimiento'",Long.class,sesion.id())).isEqualTo(1);
+ }
+
 }

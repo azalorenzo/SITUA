@@ -20,7 +20,7 @@ export function reservarSesion(datos:{periodoId:number;disponibilidadId:number;t
 export function cambiarEstadoSesion(esTutor:boolean,id:number,accion:'confirmar'|'rechazar'|'cancelar') {
   return solicitarApi<SesionAgenda>(`/${esTutor?'tutor':'estudiante'}/sesiones/${id}/${accion}`,{method:'PATCH'});
 }
-export const nombresEstado:Record<SesionAgenda['estado'],string>={solicitada:'Solicitada',confirmada:'Confirmada',rechazada:'Rechazada',cancelada:'Cancelada',completada:'Completada',no_asistio:'No asistió'};
+export const nombresEstado:Record<SesionAgenda['estado'],string>={solicitada:'Solicitada',confirmada:'Confirmada',rechazada:'Rechazada',cancelada:'Cancelada',completada:'Completada',no_asistio:'No asistió',vencida:'Vencida'};
 export const fechaSesion=(valor:string)=>new Date(valor+'Z');
 export const diaSesion=(valor:string)=>new Intl.DateTimeFormat('es-MX',{day:'2-digit',month:'2-digit',year:'numeric'}).format(fechaSesion(valor));
 export const horaSesion=(valor:string)=>new Intl.DateTimeFormat('es-MX',{hour:'2-digit',minute:'2-digit',hour12:false}).format(fechaSesion(valor));

@@ -218,4 +218,58 @@ class EstudiantesTutorPruebas {
         consultar(autorizacionCoordinador).andExpect(status().isForbidden());
         detalle(autorizacionCoordinador, ana).andExpect(status().isForbidden());
     }
+    @Test
+    void buscaPorNombreYCarreraDesdeElServidor() throws Exception {
+        cliente.perform(get("/api/tutor/estudiantes").param("busqueda", "  ana  ").header("Authorization", autorizacionTutor))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(1)).andExpect(jsonPath("$[0].id").value(ana));
+        cliente.perform(get("/api/tutor/estudiantes").param("busqueda", "Carrera de pruebas").header("Authorization", autorizacionTutor))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(2));
+    }
+
+    @Test
+    void filtraPorElRiesgoDeLaUltimaMedicion() throws Exception {
+        cliente.perform(get("/api/tutor/estudiantes").param("riesgo", "Medio").header("Authorization", autorizacionTutor))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(1)).andExpect(jsonPath("$[0].id").value(ana));
+        cliente.perform(get("/api/tutor/estudiantes").param("riesgo", "alto").header("Authorization", autorizacionTutor))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    void combinaBusquedaYRiesgo() throws Exception {
+        cliente.perform(get("/api/tutor/estudiantes").param("busqueda", "Beto").param("riesgo", "medio").header("Authorization", autorizacionTutor))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
+        cliente.perform(get("/api/tutor/estudiantes").param("busqueda", "Ana").param("riesgo", "medio").header("Authorization", autorizacionTutor))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(1));
+    }
+
+    @Test
+    void distingueSinEvaluacionDeSinRiesgo() throws Exception {
+        cliente.perform(get("/api/tutor/estudiantes").param("riesgo", "sin_evaluar").header("Authorization", autorizacionTutor))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(1)).andExpect(jsonPath("$[0].id").value(beto));
+        cliente.perform(get("/api/tutor/estudiantes").param("riesgo", "sin_riesgo").header("Authorization", autorizacionTutor))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    void laBusquedaNoAmpliaLosPermisosDelTutor() throws Exception {
+        cliente.perform(get("/api/tutor/estudiantes").param("busqueda", "Carla").param("tutorId", String.valueOf(otroTutor)).header("Authorization", autorizacionTutor))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    void trataLosComodinesComoTexto() throws Exception {
+        for (String busqueda : List.of("%", "_", "!", "' OR 1=1 --")) {
+            cliente.perform(get("/api/tutor/estudiantes").param("busqueda", busqueda).header("Authorization", autorizacionTutor))
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
+        }
+    }
+
+    @Test
+    void rechazaFiltrosInvalidos() throws Exception {
+        cliente.perform(get("/api/tutor/estudiantes").param("riesgo", "inventado").header("Authorization", autorizacionTutor))
+                .andExpect(status().isUnprocessableContent());
+        cliente.perform(get("/api/tutor/estudiantes").param("busqueda", "a".repeat(201)).header("Authorization", autorizacionTutor))
+                .andExpect(status().isUnprocessableContent());
+    }
+
 }

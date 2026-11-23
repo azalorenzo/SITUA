@@ -499,3 +499,25 @@ Las rutas son `GET/POST /api/tutor/reportes`, `GET /api/tutor/reportes/analisis`
 Las gráficas académicas usan mediciones de los estudiantes actualmente asignados al tutor, tomando el periodo activo más reciente de cada uno. El rendimiento muestra seis meses con la última medición disponible de cada estudiante en cada mes; los meses sin datos quedan vacíos, sin inventar ceros. Progreso compara la primera medición disponible con la última del expediente y muestra hasta diez estudiantes. El promedio conserva los ceros reales y excluye ausencias. Estudiantes atendidos cuenta personas con sesiones completadas; asistencia se calcula sobre completadas y no asistió. Las tarjetas que antes mostraban aprobación y satisfacción ficticias ahora presentan reportes completados y asistencia reales.
 
 Se reutilizan sesiones, observaciones, cambios de sesión y reportes, sin nuevas tablas ni migraciones. Se conservaron las distribuciones de las pantallas y se añadieron solo los campos necesarios para registrar la duración y los reportes. No se añadieron archivos Bruno ni se enviaron correos. Verificación de este avance: veintidós pruebas nuevas del backend y dieciséis comprobaciones de navegador con cuentas temporales eliminadas al finalizar, incluyendo persistencia, seguimiento desde estudiante, PDF y lectura desde coordinación.
+
+## Inicio del estudiante y del tutor
+
+`GET /api/estudiante/inicio` entrega la próxima sesión solicitada o confirmada futura, las próximas sesiones virtuales y las actividades personales pendientes, separadas en talleres y recordatorios. Se consultan únicamente los datos de la cuenta conectada. Las sesiones canceladas, rechazadas o finalizadas no aparecen como próximas. El estudiante puede solicitar una tutoría desde el acceso existente a sesiones virtuales y cancelar con las mismas reglas de la agenda.
+
+Los talleres y recordatorios se guardan en `actividades_personales` mediante `POST /api/estudiante/actividades`, `PUT /api/estudiante/actividades/{id}` y `DELETE /api/estudiante/actividades/{id}`. El propietario se obtiene del JWT. Se conserva una fecha de calendario para actividades sin horario o un intervalo UTC para actividades con inicio y fin; no se aceptan ambas formas simultáneamente ni intervalos invertidos. Los talleres requieren fecha. Las actividades de otra cuenta no se pueden consultar, editar ni eliminar.
+
+`GET /api/tutor/inicio` devuelve los indicadores calculados por el servidor, hasta cinco estudiantes asignados y las próximas cinco sesiones. Los estudiantes se cuentan una sola vez aunque tengan más de un periodo activo con el mismo tutor; la vista muestra el expediente del periodo activo más reciente. Las cuentas y las inscripciones deben estar activas. Tutorías realizadas cuenta sesiones completadas propias, reportes pendientes cuenta reportes pendientes propios y sesiones programadas cuenta solicitudes y confirmaciones futuras. Ver todos abre Mis tutorados y Ver todas abre Horarios.
+
+## Avisos recibidos por el estudiante
+
+`GET /api/estudiante/avisos` devuelve una página de avisos propios con conteos globales de registros y no leídos. `PATCH /api/estudiante/avisos/{id}/leer` marca un aviso y `PATCH /api/estudiante/avisos/leer-todos` marca todos los visibles del usuario, incluso los de otras páginas. La lectura conserva su primera fecha y no modifica la de otros destinatarios. Se reutiliza la vista de avisos visibles, que excluye retirados y ocultados. La cuenta debe seguir activa y tener perfil y rol de estudiante.
+
+Se conservaron los colores y la distribución de las pantallas. Se añadieron los controles necesarios para guardar lecturas, navegar páginas y registrar fecha y horario de actividades. No hay tablas, migraciones ni archivos Bruno nuevos. No se implementó mensajería ni WebSocket en este avance. Verificación: dieciséis pruebas nuevas del backend y veintiuna comprobaciones de navegador con sesiones reales, actividades persistidas, publicación desde coordinación, aislamiento entre destinatarios y conservación de lecturas al recargar. Los registros temporales se revirtieron o eliminaron al finalizar.
+
+## Vencimiento de solicitudes de tutoría
+
+La migración V5 añade el estado `vencida` a las sesiones y el cambio automático `vencimiento` al historial. El actor de este cambio queda vacío porque lo realiza el sistema.
+
+El backend revisa cada 30 segundos hasta 100 solicitudes pendientes cuya hora de inicio ya llegó. También actualiza las solicitudes propias al consultar las sesiones, la agenda o el resumen del estudiante. Solo cambia solicitudes sin respuesta; las confirmadas conservan su estado y permiten registrar su resultado. La actualización y el historial se guardan juntos, sin duplicar el cambio al repetir una consulta.
+
+Estudiante y tutor pueden consultar y filtrar el estado Vencida con los controles existentes. Una solicitud vencida conserva sus datos y no ofrece acciones de confirmación, cancelación ni registro de resultado. Los compañeros reciben el cambio de base de datos al iniciar el backend con Flyway; no deben editar las migraciones anteriores.

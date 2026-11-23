@@ -1,5 +1,5 @@
 import { RegistroSesionModal } from './RegistroSesionModal';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Search, Filter, Eye, Calendar, X, Clock, FileText, AlertCircle, TrendingUp, CheckCircle, Loader2 } from 'lucide-react';
 import { ErrorSolicitud } from '../servicios/autenticacion';
 import { consultarDetalleEstudianteTutor, consultarEstudiantesTutor } from '../servicios/estudiantesTutor';
@@ -84,10 +84,6 @@ function aObservacion(o: ObservacionEstudianteTutor): Observation {
   return { date: formatearFecha(o.observadoEn), type: TIPOS_OBSERVACION[o.tipo], text: o.contenido, priority: o.prioridad === 'alta' ? 'high' : 'normal' };
 }
 
-async function consultarMisEstudiantes(comprobacion: AbortSignal) {
-  return (await consultarEstudiantesTutor(comprobacion)).map(aEstudiante);
-}
-
 export function MyStudentsView() {
   const [searchQuery, setSearchQuery]       = useState('');
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
@@ -96,6 +92,14 @@ export function MyStudentsView() {
   // Modal Registrar
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [registerStudent, setRegisterStudent]     = useState<Student | null>(null);
+  const [busquedaAplicada, cambiarBusquedaAplicada] = useState('');
+  useEffect(() => {
+    const espera = setTimeout(() => cambiarBusquedaAplicada(searchQuery), 300);
+    return () => clearTimeout(espera);
+  }, [searchQuery]);
+  const consultarMisEstudiantes = useCallback(async (comprobacion: AbortSignal) => {
+    return (await consultarEstudiantesTutor(comprobacion, busquedaAplicada, filterStatus.toLowerCase())).map(aEstudiante);
+  }, [busquedaAplicada, filterStatus]);
   const consulta = usarConsultaCoordinacion<Student>(consultarMisEstudiantes);
   const students = consulta.datos;
 
@@ -141,13 +145,6 @@ export function MyStudentsView() {
     return 'text-[#B83F4B]';
   };
 
-  const filteredStudents = students.filter(s => {
-    const matchSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                        s.career.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchFilter = filterStatus === 'Todos' || s.riesgo === filterStatus;
-    return matchSearch && matchFilter;
-  });
-
   // ── Abrir modal registrar ───────────────────────────────────────────────────
   const openRegister = (student: Student) => {
     setSelectedStudent(null);setRegisterStudent(student);setShowRegisterModal(true);
@@ -174,7 +171,9 @@ export function MyStudentsView() {
           <div className="flex-1 relative">
             <Search className="w-5 h-5 text-[#53716E] absolute left-3 top-1/2 -translate-y-1/2" />
             <input
-              type="text"
+              type="search"
+              aria-label="Buscar tutorado"
+              maxLength={200}
               placeholder="Buscar por nombre o carrera..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
@@ -184,6 +183,7 @@ export function MyStudentsView() {
           <div className="flex items-center gap-2">
             <Filter className="w-5 h-5 text-[#53716E]" />
             <select
+              aria-label="Riesgo académico"
               value={filterStatus}
               onChange={e => setFilterStatus(e.target.value)}
               className="border border-[#DCE3EA] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1F6662]"
@@ -212,7 +212,7 @@ export function MyStudentsView() {
               </tr>
             </thead>
             <tbody>
-              {filteredStudents.map(student => (
+              {students.map(student => (
                 <tr key={student.id} className="border-b border-[#DCE3EA] hover:bg-[#F5F7FA]">
                   <td className="py-4 px-6">
                     <div className="flex items-center gap-3">
@@ -264,7 +264,7 @@ export function MyStudentsView() {
           </table>
         </div>
 
-        {!consulta.cargando && !consulta.error && filteredStudents.length === 0 && (
+        {!consulta.cargando && !consulta.error && students.length === 0 && (
           <div className="text-center py-12">
             <p className="text-[#53716E]">No se encontraron estudiantes con estos criterios.</p>
           </div>

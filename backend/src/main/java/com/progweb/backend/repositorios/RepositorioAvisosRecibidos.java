@@ -50,4 +50,8 @@ public class RepositorioAvisosRecibidos {
     public int marcarTodosLeidos(long usuarioId, LocalDateTime ahora) {
         return consultas.update("UPDATE aviso_destinatarios d SET d.leido_en=? WHERE " + CONDICION_MARCADO, ahora, usuarioId);
     }
+
+    public long contar(long usuario){return consultas.queryForObject("SELECT COUNT(*) FROM v_avisos_visibles WHERE usuario_id=?",Long.class,usuario);}
+    public long noLeidos(long usuario){return consultas.queryForObject("SELECT COUNT(*) FROM v_avisos_visibles WHERE usuario_id=? AND leido_en IS NULL",Long.class,usuario);}
+    public List<RespuestaAvisoRecibido> listarPagina(long usuario,int tamano,long desplazamiento){return consultas.query(SELECCION+" WHERE usuario_id=? ORDER BY publicado_en DESC,aviso_id DESC LIMIT ? OFFSET ?",convertir,usuario,tamano,desplazamiento);}
 }

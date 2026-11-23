@@ -43,8 +43,22 @@ public class RepositorioEstudiantesTutor {
         return consultas.queryForList("SELECT id FROM tutores WHERE usuario_id=?", Long.class, usuarioId).stream().findFirst();
     }
 
-    public List<RespuestaEstudianteTutor> listar(long tutorId) {
-        return consultas.query(SELECCION + " ORDER BY x.nombre, a.estudiante_id", convertir, tutorId);
+    public List<RespuestaEstudianteTutor> listar(long tutorId, String busqueda, String riesgo) {
+        var parametros = new java.util.ArrayList<Object>();
+        parametros.add(tutorId);
+        String condiciones = "";
+        if (!busqueda.isEmpty()) {
+            String patron = "%" + busqueda.replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
+            condiciones += " AND (x.nombre LIKE ? ESCAPE '!' OR x.carrera LIKE ? ESCAPE '!')";
+            parametros.add(patron);
+            parametros.add(patron);
+        }
+        if (riesgo.equals("sin_evaluar")) condiciones += " AND x.nivel_riesgo IS NULL";
+        else if (!riesgo.equals("todos")) {
+            condiciones += " AND x.nivel_riesgo = ?";
+            parametros.add(riesgo);
+        }
+        return consultas.query(SELECCION + condiciones + " ORDER BY x.nombre, a.estudiante_id", convertir, parametros.toArray());
     }
 
     public Optional<RespuestaEstudianteTutor> buscar(long tutorId, long estudianteId) {

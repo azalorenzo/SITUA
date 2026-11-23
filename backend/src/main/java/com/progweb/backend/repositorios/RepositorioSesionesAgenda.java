@@ -67,7 +67,7 @@ public class RepositorioSesionesAgenda {
         JOIN periodos_academicos p ON p.id=a.periodo_id AND p.estado='activo'
         JOIN tutores t ON t.id=d.tutor_id JOIN usuarios u ON u.id=t.usuario_id AND u.estado='activo'
         WHERE d.estado='habilitada' AND d.inicio_en>:ahora
-          AND NOT EXISTS(SELECT 1 FROM sesiones s WHERE s.disponibilidad_id=d.id AND s.estado NOT IN ('cancelada','rechazada'))
+          AND NOT EXISTS(SELECT 1 FROM sesiones s WHERE s.disponibilidad_id=d.id AND s.estado NOT IN ('cancelada','rechazada','vencida'))
           AND NOT EXISTS(SELECT 1 FROM sesiones s WHERE (s.estudiante_id=:estudiante OR s.tutor_id=d.tutor_id)
             AND s.estado IN ('solicitada','confirmada','completada','no_asistio') AND s.inicio_en<d.fin_en AND s.fin_en>d.inicio_en)
         """;
@@ -160,5 +160,12 @@ public class RepositorioSesionesAgenda {
             SELECT c.id,c.tipo,s.tema,c.estado_nuevo,c.ocurrido_en FROM sesion_cambios c JOIN sesiones s ON s.id=c.sesion_id
             WHERE s.estudiante_id=? ORDER BY c.ocurrido_en DESC,c.id DESC LIMIT 5
             """,(fila,posicion)->new ResumenSesionesEstudiante.Actividad(fila.getLong(1),fila.getString(2),fila.getString(3),fila.getString(4),fila.getObject(5,LocalDateTime.class)),estudiante);
+    }
+
+    public List<RespuestaSesionAgenda> virtualesEstudiante(long estudiante,LocalDateTime ahora){
+        return consultas.query(COLUMNAS+SESIONES+" WHERE s.estudiante_id=? AND s.modalidad='virtual' AND s.estado IN ('solicitada','confirmada') AND s.inicio_en>? ORDER BY s.inicio_en,s.id LIMIT 5",convertir(ahora,false),estudiante,ahora);
+    }
+    public List<RespuestaSesionAgenda> proximasTutor(long tutor,LocalDateTime ahora){
+        return consultas.query(COLUMNAS+SESIONES+" WHERE s.tutor_id=? AND s.estado IN ('solicitada','confirmada') AND s.inicio_en>? ORDER BY s.inicio_en,s.id LIMIT 5",convertir(ahora,true),tutor,ahora);
     }
 }

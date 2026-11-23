@@ -72,3 +72,15 @@ El segundo pendiente quedó implementado: solicitud desde Mi agenda, horarios di
 ## Avance posterior: registro y reportes del tutor
 
 El tercer pendiente quedó implementado: registro real desde Mis tutorados y Sesiones realizadas, cierre de sesiones confirmadas con duración y observaciones, resultado no asistió, historial compartido con estudiante y creación/completado de reportes propios visibles desde coordinación. Reportes del tutor tiene consulta, estadísticas y PDF reales. Los paneles de Inicio, avisos del estudiante y mensajes siguen en los siguientes avances.
+
+## Avance posterior: Inicio y avisos del estudiante
+
+Inicio del estudiante consulta sesiones reales y guarda talleres y recordatorios personales. Inicio del tutor muestra indicadores propios, estudiantes y próximas sesiones. Avisos del estudiante recibe publicaciones dirigidas por coordinación, con paginación y lectura persistente por destinatario. La mensajería y la comprobación final del sistema completo siguen pendientes.
+
+## Avance posterior: filtros de Mis tutorados
+
+La búsqueda por nombre o carrera y el filtro de riesgo se ejecutan en el servidor. Se pueden combinar, conservan los permisos del tutor conectado y utilizan la última medición académica. Se eliminó el filtrado local de la pantalla, conservando su diseño.
+
+## Avance posterior: vencimiento de solicitudes
+
+Las solicitudes sin respuesta pasan a Vencida al alcanzar su inicio. Se actualizan mediante una tarea del backend y al consultar agenda, sesiones o resumen. Se conserva el historial con un cambio automático sin atribuirlo a una persona. Las confirmadas conservan su estado. V5 agrega los valores necesarios y el actor opcional en el historial. La etiqueta y los filtros existentes muestran Vencida sin cambiar la distribución de las pantallas.

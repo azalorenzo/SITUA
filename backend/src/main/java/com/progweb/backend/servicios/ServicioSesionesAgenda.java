@@ -15,8 +15,9 @@ public class ServicioSesionesAgenda {
     private final RepositorioSesionesAgenda sesiones;
     private final ServicioAutenticacion autenticacion;
     private final Clock reloj;
-    public ServicioSesionesAgenda(RepositorioSesionesAgenda sesiones,ServicioAutenticacion autenticacion,Clock reloj) {
-        this.sesiones=sesiones;this.autenticacion=autenticacion;this.reloj=reloj;
+    private final ServicioVencimientoSesiones vencimiento;
+    public ServicioSesionesAgenda(RepositorioSesionesAgenda sesiones,ServicioAutenticacion autenticacion,Clock reloj,ServicioVencimientoSesiones vencimiento) {
+        this.sesiones=sesiones;this.autenticacion=autenticacion;this.reloj=reloj;this.vencimiento=vencimiento;
     }
     private LocalDateTime ahora() { return LocalDateTime.ofInstant(reloj.instant(),ZoneOffset.UTC); }
     private record Persona(long usuario,long perfil,boolean esTutor) { }
@@ -34,19 +35,24 @@ public class ServicioSesionesAgenda {
         if(obligatorio&&(desde==null||hasta==null)||desde!=null&&hasta!=null&&(!hasta.isAfter(desde)||Duration.between(desde,hasta).toDays()>62))
             throw new SolicitudRechazada(422,"Selecciona un intervalo válido de hasta dos meses.","desde");
     }
+    @Transactional
     public PaginaSesiones listar(String identificador,boolean esTutor,String estado,LocalDateTime desde,LocalDateTime hasta,int pagina,int tamano) {
         var persona=identificar(identificador,esTutor);validarPagina(pagina,tamano);validarFechas(desde,hasta,false);
-        if(estado!=null&&!List.of("solicitada","confirmada","rechazada","cancelada","completada","no_asistio").contains(estado))throw new SolicitudRechazada(422,"Selecciona un estado válido.","estado");
+        if(estado!=null&&!List.of("solicitada","confirmada","rechazada","cancelada","completada","no_asistio","vencida").contains(estado))throw new SolicitudRechazada(422,"Selecciona un estado válido.","estado");
+        vencimiento.vencerPropias(persona.perfil(),esTutor,ahora());
         long total=sesiones.contar(persona.perfil(),esTutor,estado,desde,hasta);int paginas=Math.toIntExact((total+tamano-1)/tamano);
         int actual=Math.min(pagina,Math.max(1,paginas));
         return new PaginaSesiones(sesiones.listar(persona.perfil(),esTutor,estado,desde,hasta,tamano,(actual-1L)*tamano,ahora()),actual,tamano,total,paginas);
     }
+    @Transactional
     public List<RespuestaSesionAgenda> agenda(String identificador,LocalDateTime desde,LocalDateTime hasta) {
         var persona=identificar(identificador,false);validarFechas(desde,hasta,true);
+        vencimiento.vencerPropias(persona.perfil(),false,ahora());
         return sesiones.agenda(persona.perfil(),desde,hasta,ahora());
     }
+    @Transactional
     public ResumenSesionesEstudiante resumen(String identificador) {
-        var persona=identificar(identificador,false);return new ResumenSesionesEstudiante(sesiones.proximas(persona.perfil(),ahora()),sesiones.actividades(persona.perfil()));
+        var persona=identificar(identificador,false);vencimiento.vencerPropias(persona.perfil(),false,ahora());return new ResumenSesionesEstudiante(sesiones.proximas(persona.perfil(),ahora()),sesiones.actividades(persona.perfil()));
     }
     public List<OpcionSesionEstudiante> opciones(String identificador) { return sesiones.opciones(identificar(identificador,false).perfil()); }
     public PaginaDisponibilidades disponibles(String identificador,long periodo,int pagina,int tamano) {

@@ -19,8 +19,9 @@ public class ControladorEstudiantesTutor {
     public ControladorEstudiantesTutor(ServicioEstudiantesTutor servicio) { this.servicio = servicio; }
 
     @GetMapping
-    public ResponseEntity<List<RespuestaEstudianteTutor>> consultar(@AuthenticationPrincipal Jwt token) {
-        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(servicio.consultar(token.getSubject()));
+    public ResponseEntity<List<RespuestaEstudianteTutor>> consultar(@AuthenticationPrincipal Jwt token,
+            @RequestParam(defaultValue="") String busqueda, @RequestParam(defaultValue="todos") String riesgo) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(servicio.consultar(token.getSubject(), busqueda, riesgo));
     }
 
     @GetMapping("/{id}")

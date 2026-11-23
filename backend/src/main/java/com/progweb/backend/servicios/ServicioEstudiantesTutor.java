@@ -24,8 +24,18 @@ public class ServicioEstudiantesTutor {
     }
 
     public List<RespuestaEstudianteTutor> consultar(String identificador) {
+        return consultar(identificador, "", "todos");
+    }
+
+    public List<RespuestaEstudianteTutor> consultar(String identificador, String busqueda, String riesgo) {
         var usuario = autenticacion.consultarSesion(identificador);
-        return estudiantes.listar(tutorDe(usuario.roles(), usuario.id()));
+        long tutor = tutorDe(usuario.roles(), usuario.id());
+        String texto = busqueda.strip();
+        String nivel = riesgo.strip().toLowerCase(java.util.Locale.ROOT);
+        if (texto.length() > 200) throw new AccesoRechazado(422, "La búsqueda es demasiado larga.");
+        if (!List.of("todos", "alto", "medio", "bajo", "sin_riesgo", "sin_evaluar").contains(nivel))
+            throw new AccesoRechazado(422, "Selecciona un riesgo válido.");
+        return estudiantes.listar(tutor, texto, nivel);
     }
 
     // Un estudiante que no está asignado a este tutor responde igual que uno inexistente.

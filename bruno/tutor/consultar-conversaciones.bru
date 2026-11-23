@@ -1,0 +1,26 @@
+meta {
+  name: Consultar conversaciones del tutor
+  type: http
+  seq: 41
+}
+
+get {
+  url: {{url_api}}/tutor/mensajes/conversaciones
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{token_tutor}}
+}
+
+script:post-response {
+  if (res.getStatus() === 200 && res.getBody().length > 0) bru.setVar("conversacion_id", res.getBody()[0].id);
+}
+
+tests {
+  test("Devuelve las conversaciones del tutor conectado", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.be.an("array");
+  });
+}

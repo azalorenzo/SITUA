@@ -1,0 +1,23 @@
+meta {
+  name: Descargar PDF de todos los reportes del tutor
+  type: http
+  seq: 47
+}
+
+get {
+  url: {{url_api}}/tutor/reportes/exportar/pdf
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{token_tutor}}
+  Accept: application/pdf
+}
+
+tests {
+  test("Devuelve un PDF", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getHeader("content-type")).to.include("application/pdf");
+  });
+}

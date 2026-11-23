@@ -1,0 +1,21 @@
+meta {
+  name: Marcar conversación como leída
+  type: http
+  seq: 43
+}
+
+patch {
+  url: {{url_api}}/tutor/mensajes/conversaciones/{{conversacion_id}}/leer
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{token_tutor}}
+}
+
+tests {
+  test("Confirma la conversación leída", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

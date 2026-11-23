@@ -1,0 +1,22 @@
+meta {
+  name: Consultar inicio del tutor
+  type: http
+  seq: 40
+}
+
+get {
+  url: {{url_api}}/tutor/inicio
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{token_tutor}}
+}
+
+tests {
+  test("Devuelve las cifras y los estudiantes destacados", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().estudiantesDestacados).to.be.an("array");
+  });
+}

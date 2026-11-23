@@ -1,0 +1,27 @@
+meta {
+  name: Consultar panel de reportes del tutor
+  type: http
+  seq: 45
+}
+
+get {
+  url: {{url_api}}/tutor/reportes
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{token_tutor}}
+}
+
+script:post-response {
+  if (res.getStatus() === 200 && res.getBody().reportes.length > 0) bru.setVar("reporte_tutor_id", res.getBody().reportes[0].id);
+}
+
+tests {
+  test("Devuelve los reportes y las métricas del tutor", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().reportes).to.be.an("array");
+    expect(res.getBody().rendimiento).to.be.an("array");
+  });
+}

@@ -1,0 +1,27 @@
+meta {
+  name: Enviar mensaje del tutor
+  type: http
+  seq: 44
+}
+
+post {
+  url: {{url_api}}/tutor/mensajes/conversaciones/{{conversacion_id}}/mensajes
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token_tutor}}
+}
+
+body:json {
+  {"contenido":"Mensaje de prueba desde Bruno"}
+}
+
+tests {
+  test("Envía el mensaje como el tutor conectado", function () {
+    expect(res.getStatus()).to.equal(201);
+    expect(res.getBody().enviado).to.equal(true);
+  });
+}

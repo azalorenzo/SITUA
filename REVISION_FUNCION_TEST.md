@@ -84,3 +84,13 @@ La búsqueda por nombre o carrera y el filtro de riesgo se ejecutan en el servid
 ## Avance posterior: vencimiento de solicitudes
 
 Las solicitudes sin respuesta pasan a Vencida al alcanzar su inicio. Se actualizan mediante una tarea del backend y al consultar agenda, sesiones o resumen. Se conserva el historial con un cambio automático sin atribuirlo a una persona. Las confirmadas conservan su estado. V5 agrega los valores necesarios y el actor opcional en el historial. La etiqueta y los filtros existentes muestran Vencida sin cambiar la distribución de las pantallas.
+
+## Integración en test-aplicacion2
+
+La rama parte de funcion-test y conserva los avances locales de Inicio, avisos, filtros de Mis tutorados y vencimiento de solicitudes. Se fusionó funcionalidad/mensajes-reportes-inicio-tutor; las demás ramas remotas revisadas ya estaban incluidas por su historial.
+
+Inicio y reportes tenían implementaciones distintas. Se conservaron los contratos actuales, las próximas sesiones, el registro y completado de reportes, los filtros y la paginación del servidor. Se adaptaron las pruebas entrantes a estos contratos. Se incorporó la mensajería del tutor para conversaciones existentes: consulta, envío y lectura persistente. Se descartaron los tipos y servicios duplicados sin consumidores y las peticiones Bruno nuevas, manteniendo la indicación de no añadir esas pruebas todavía.
+
+La mensajería del estudiante sigue pendiente; la integración del tutor no crea conversaciones nuevas ni incorpora WebSocket. La búsqueda de conversaciones de esta implementación entrante sigue siendo local y se limita a la lista recibida.
+
+Verificación: 286 pruebas del backend aprobadas, compilación del frontend correcta y seis comprobaciones de navegador para mensajes reales entre cuentas temporales. Inicio y reportes respondieron correctamente con la sesión del tutor. Se limpiaron los registros temporales. Los commits usan la identidad configurada del propietario y conservan los autores originales de la rama fusionada, sin añadir coautoría del asistente. La rama quedó local, sin publicar en GitHub.

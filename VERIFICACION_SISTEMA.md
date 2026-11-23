@@ -76,3 +76,9 @@ El resultado de Maven está en `backend/verificacion-completa.log`. Las comproba
 Se usaron cuentas y registros temporales. Una limpieza de reservas coincidió con el registro de otro caso de prueba y fue bloqueada por las claves foráneas; se limpiaron después los registros concretos y se repitió reservas por separado, con resultado correcto. La consulta final no encontró cuentas temporales recientes restantes. No se eliminaron cuentas de demostración ni se cambiaron contraseñas de usuarios existentes.
 
 No se añadieron pruebas Bruno, comentarios de código ni textos a las pantallas. Esta revisión no cambió el diseño ni implementó los pendientes anteriores.
+
+## Comprobación posterior de la fusión
+
+En test-aplicacion2 se integró funcionalidad/mensajes-reportes-inicio-tutor con los avances locales. La suite conjunta pasó con 286 pruebas y el frontend compiló correctamente. Se verificaron seis casos en navegador de mensajería del tutor con cuentas temporales: consulta, envío, autor persistido, lectura, recarga y ausencia de errores React. Se limpiaron los datos.
+
+La mensajería incorporada solo cubre al tutor y conversaciones existentes; la pantalla del estudiante, el inicio de conversaciones y WebSocket siguen pendientes. La búsqueda de conversaciones entrante se realiza en React. Estas comprobaciones amplían la revisión anterior, que excluía mensajes.

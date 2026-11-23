@@ -1,159 +1,124 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Search, Send, Paperclip, MoreVertical, Phone, Video } from 'lucide-react';
+import { consultarConversaciones, consultarMensajesConversacion, enviarMensajeConversacion, marcarConversacionLeida } from '../servicios/mensajesTutor';
+import { mensajeDeError } from '../servicios/usarConsultaTutor';
+import type { ConversacionTutor, MensajeTutor } from '../tipos/mensajesTutor';
+import { EstadoConsulta, usarConsultaCoordinacion } from './ConsultaCoordinacion';
 
 interface Message {
   id: number;
-  senderId: string;
   text: string;
   timestamp: string;
   isSent: boolean;
 }
 
+// online llega nulo porque el sistema no registra si la otra persona está conectada.
 interface Chat {
   id: number;
   studentName: string;
-  studentAvatar: string;
+  studentAvatar: string | null;
   lastMessage: string;
   timestamp: string;
   unreadCount: number;
-  online: boolean;
+  online: boolean | null;
+}
+
+// El backend guarda las fechas en UTC sin zona; aquí se muestran en la hora del navegador.
+function formatearHoraMensaje(utc: string): string {
+  return new Date(`${utc}Z`).toLocaleTimeString('es-MX', { hour: 'numeric', minute: '2-digit' });
+}
+
+function formatearMarca(utc: string | null): string {
+  if (!utc) return '';
+  const fecha = new Date(`${utc}Z`);
+  const hoy = new Date();
+  if (fecha.toDateString() === hoy.toDateString()) return formatearHoraMensaje(utc);
+  const ayer = new Date(hoy);
+  ayer.setDate(hoy.getDate() - 1);
+  if (fecha.toDateString() === ayer.toDateString()) return 'Ayer';
+  return fecha.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+}
+
+function aChat(c: ConversacionTutor): Chat {
+  return {
+    id: c.id, studentName: c.nombre, studentAvatar: c.avatarUrl, lastMessage: c.ultimoMensaje ?? '',
+    timestamp: formatearMarca(c.ultimoEnviadoEn), unreadCount: c.noLeidos, online: null
+  };
+}
+
+function aMensaje(m: MensajeTutor): Message {
+  return { id: m.id, text: m.contenido, timestamp: formatearHoraMensaje(m.enviadoEn), isSent: m.enviado };
+}
+
+async function consultarChats(comprobacion: AbortSignal) {
+  return (await consultarConversaciones(comprobacion)).map(aChat);
+}
+
+// Sin foto de perfil se muestran las iniciales, como en el resto de la aplicación.
+function Avatar({ nombre, url, clases }: { nombre: string; url: string | null; clases: string }) {
+  if (url) return <img src={url} alt={nombre} className={`${clases} rounded-full object-cover`} />;
+  return (
+    <div className={`${clases} bg-gradient-to-br from-[#1F6662] to-[#1F6662] rounded-full flex items-center justify-center text-white font-medium`}>
+      {nombre.split(' ').map(n => n[0]).join('').slice(0, 2)}
+    </div>
+  );
 }
 
 export function MessagesView() {
-  const [selectedChat, setSelectedChat] = useState<number>(1);
+  const consultaChats = usarConsultaCoordinacion<Chat>(consultarChats);
+  const [chats, setChats] = useState<Chat[]>([]);
+  useEffect(() => { setChats(consultaChats.datos); }, [consultaChats.datos]);
+
+  const [selectedChat, setSelectedChat] = useState<number | null>(null);
   const [messageInput, setMessageInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [enviando, setEnviando] = useState(false);
 
-  const chats: Chat[] = [
-    {
-      id: 1,
-      studentName: 'Ana Laura Gómez',
-      studentAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop',
-      lastMessage: 'Gracias por la explicación, me quedó más claro',
-      timestamp: '10:30 AM',
-      unreadCount: 2,
-      online: true
-    },
-    {
-      id: 2,
-      studentName: 'Carlos Méndez Ruiz',
-      studentAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop',
-      lastMessage: '¿Podemos reprogramar la sesión de mañana?',
-      timestamp: '9:15 AM',
-      unreadCount: 0,
-      online: false
-    },
-    {
-      id: 3,
-      studentName: 'María Fernández López',
-      studentAvatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop',
-      lastMessage: 'Perfecto, nos vemos el viernes',
-      timestamp: 'Ayer',
-      unreadCount: 0,
-      online: true
-    },
-    {
-      id: 4,
-      studentName: 'Roberto Silva García',
-      studentAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop',
-      lastMessage: 'Adjunto los ejercicios resueltos',
-      timestamp: 'Ayer',
-      unreadCount: 1,
-      online: false
-    },
-    {
-      id: 5,
-      studentName: 'Laura Hernández Cruz',
-      studentAvatar: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=100&h=100&fit=crop',
-      lastMessage: 'Muchas gracias por tu ayuda',
-      timestamp: '15 may',
-      unreadCount: 0,
-      online: false
-    }
-  ];
+  // Al cargar las conversaciones se abre la primera, como hacía la pantalla.
+  useEffect(() => {
+    if (selectedChat === null && chats.length > 0) setSelectedChat(chats[0].id);
+  }, [chats, selectedChat]);
 
-  const messages: { [key: number]: Message[] } = {
-    1: [
-      {
-        id: 1,
-        senderId: 'student',
-        text: 'Hola maestro, tengo una duda sobre el tema de derivadas',
-        timestamp: '10:15 AM',
-        isSent: false
-      },
-      {
-        id: 2,
-        senderId: 'tutor',
-        text: 'Hola Ana Laura, claro que sí. ¿Cuál es tu duda?',
-        timestamp: '10:17 AM',
-        isSent: true
-      },
-      {
-        id: 3,
-        senderId: 'student',
-        text: 'No entiendo muy bien cómo aplicar la regla de la cadena en este ejercicio',
-        timestamp: '10:18 AM',
-        isSent: false
-      },
-      {
-        id: 4,
-        senderId: 'tutor',
-        text: 'Perfecto. La regla de la cadena se usa cuando tienes una función compuesta. Déjame explicarte con un ejemplo.',
-        timestamp: '10:20 AM',
-        isSent: true
-      },
-      {
-        id: 5,
-        senderId: 'tutor',
-        text: 'Si tienes f(g(x)), la derivada es f\'(g(x)) * g\'(x). ¿Tiene sentido?',
-        timestamp: '10:21 AM',
-        isSent: true
-      },
-      {
-        id: 6,
-        senderId: 'student',
-        text: 'Gracias por la explicación, me quedó más claro',
-        timestamp: '10:30 AM',
-        isSent: false
-      }
-    ],
-    2: [
-      {
-        id: 1,
-        senderId: 'student',
-        text: 'Buenos días maestro',
-        timestamp: '9:10 AM',
-        isSent: false
-      },
-      {
-        id: 2,
-        senderId: 'tutor',
-        text: 'Buenos días Carlos, ¿cómo estás?',
-        timestamp: '9:12 AM',
-        isSent: true
-      },
-      {
-        id: 3,
-        senderId: 'student',
-        text: '¿Podemos reprogramar la sesión de mañana?',
-        timestamp: '9:15 AM',
-        isSent: false
-      }
-    ]
-  };
+  const consultarMensajesChat = useCallback(async (comprobacion: AbortSignal) => {
+    if (selectedChat === null) return [];
+    return (await consultarMensajesConversacion(selectedChat, comprobacion)).map(aMensaje);
+  }, [selectedChat]);
+  const consultaMensajes = usarConsultaCoordinacion<Message>(consultarMensajesChat);
+  const [currentMessages, setCurrentMessages] = useState<Message[]>([]);
+  useEffect(() => { setCurrentMessages(consultaMensajes.datos); }, [consultaMensajes.datos]);
 
   const currentChat = chats.find(chat => chat.id === selectedChat);
-  const currentMessages = messages[selectedChat] || [];
+
+  // Al abrir una conversación con mensajes sin leer se marca como leída.
+  const sinLeer = currentChat?.unreadCount ?? 0;
+  useEffect(() => {
+    if (selectedChat === null || sinLeer === 0 || consultaMensajes.cargando || consultaMensajes.error) return;
+    marcarConversacionLeida(selectedChat)
+      .then(() => setChats(prev => prev.map(c => (c.id === selectedChat ? { ...c, unreadCount: 0 } : c))))
+      .catch(() => { /* se vuelve a intentar al abrir de nuevo la conversación */ });
+  }, [selectedChat, sinLeer, consultaMensajes.cargando, consultaMensajes.error]);
 
   const filteredChats = chats.filter(chat =>
     chat.studentName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleSendMessage = () => {
-    if (messageInput.trim()) {
-      // Aquí iría la lógica para enviar el mensaje
-      console.log('Sending message:', messageInput);
+  const handleSendMessage = async () => {
+    const texto = messageInput.trim();
+    if (!texto || selectedChat === null || enviando) return;
+    setEnviando(true);
+    try {
+      const enviado = aMensaje(await enviarMensajeConversacion(selectedChat, texto));
+      setCurrentMessages(prev => [...prev, enviado]);
+      setChats(prev => {
+        const actual = prev.find(c => c.id === selectedChat);
+        if (!actual) return prev;
+        return [{ ...actual, lastMessage: texto, timestamp: enviado.timestamp }, ...prev.filter(c => c.id !== selectedChat)];
+      });
       setMessageInput('');
+    } catch (fallo) {
+      alert(mensajeDeError(fallo, 'No se pudo enviar el mensaje.'));
+    } finally {
+      setEnviando(false);
     }
   };
 
@@ -177,6 +142,7 @@ export function MessagesView() {
 
         {/* Chats List */}
         <div className="flex-1 overflow-y-auto">
+          <EstadoConsulta cargando={consultaChats.cargando} error={consultaChats.error} alReintentar={consultaChats.actualizar} />
           {filteredChats.map(chat => (
             <button
               key={chat.id}
@@ -186,11 +152,7 @@ export function MessagesView() {
               }`}
             >
               <div className="relative">
-                <img
-                  src={chat.studentAvatar}
-                  alt={chat.studentName}
-                  className="w-12 h-12 rounded-full object-cover"
-                />
+                <Avatar nombre={chat.studentName} url={chat.studentAvatar} clases="w-12 h-12" />
                 {chat.online && (
                   <span className="absolute bottom-0 right-0 w-3 h-3 bg-[#227F78] border-2 border-white rounded-full"></span>
                 )}
@@ -221,20 +183,18 @@ export function MessagesView() {
           <div className="p-4 border-b border-[#DCE3EA] flex items-center justify-between bg-white">
             <div className="flex items-center gap-3">
               <div className="relative">
-                <img
-                  src={currentChat.studentAvatar}
-                  alt={currentChat.studentName}
-                  className="w-10 h-10 rounded-full object-cover"
-                />
+                <Avatar nombre={currentChat.studentName} url={currentChat.studentAvatar} clases="w-10 h-10" />
                 {currentChat.online && (
                   <span className="absolute bottom-0 right-0 w-3 h-3 bg-[#227F78] border-2 border-white rounded-full"></span>
                 )}
               </div>
               <div>
                 <h3 className="font-semibold">{currentChat.studentName}</h3>
-                <p className="text-xs text-[#53716E]">
-                  {currentChat.online ? 'En línea' : 'Desconectado'}
-                </p>
+                {currentChat.online !== null && (
+                  <p className="text-xs text-[#53716E]">
+                    {currentChat.online ? 'En línea' : 'Desconectado'}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -253,6 +213,7 @@ export function MessagesView() {
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#F5F7FA]">
+            <EstadoConsulta cargando={consultaMensajes.cargando} error={consultaMensajes.error} alReintentar={consultaMensajes.actualizar} />
             {currentMessages.map(message => (
               <div
                 key={message.id}
@@ -294,6 +255,7 @@ export function MessagesView() {
               />
               <button
                 onClick={handleSendMessage}
+                disabled={enviando}
                 className="p-2 bg-[#1F6662] text-white rounded-lg hover:bg-[#1C4543]"
               >
                 <Send className="w-5 h-5" />

@@ -1,7 +1,8 @@
-import { mockReports, showMockAction } from '../mock/data';
 import { useState } from 'react';
 import { Users, CheckCircle, AlertTriangle, Download, FileText, TrendingUp, Loader2 } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { consultarPanelReportes, descargarReporteTutor, descargarReportesTutor } from '../servicios/reportesTutor';
+import { mensajeDeError, usarConsultaTutor } from '../servicios/usarConsultaTutor';
 
 
 interface Reporte {
@@ -13,30 +14,53 @@ interface Reporte {
   motivo: string;
 }
 
+const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+// El backend manda el mes como AAAA-MM; la gráfica usa la abreviatura en español.
+function etiquetaMes(mes: string): string {
+  return MESES[Number(mes.slice(5, 7)) - 1] ?? mes;
+}
+
+function guardarArchivo(archivo: Blob, nombre: string) {
+  const direccion = URL.createObjectURL(archivo);
+  const enlace = document.createElement('a');
+  enlace.href = direccion;
+  enlace.download = nombre;
+  enlace.click();
+  window.setTimeout(() => URL.revokeObjectURL(direccion), 1000);
+}
+
 export function TutorReportsView() {
-  const [reportes, setReportes] = useState<Reporte[]>(mockReports);
-  const [cargando, setCargando] = useState(false);
+  const consulta = usarConsultaTutor(consultarPanelReportes);
+  const panel = consulta.datos;
+  const cargando = consulta.cargando;
   const [exportando, setExportando] = useState<string | null>(null);
-  const [error, setError] = useState('');
+  const [errorDescarga, setErrorDescarga] = useState('');
+  const error = consulta.error || errorDescarga;
 
-  const performanceData = [
-    { mes: 'Ene', promedio: 8.2 },
-    { mes: 'Feb', promedio: 8.5 },
-    { mes: 'Mar', promedio: 8.3 },
-    { mes: 'Abr', promedio: 8.7 },
-    { mes: 'May', promedio: 8.9 }
-  ];
+  const reportes: Reporte[] = (panel?.reportes ?? []).map(r => ({
+    id_reporte: String(r.id), estudiante: r.estudiante, tutor: panel?.tutor ?? '', fecha: r.fecha,
+    estatus: r.estado === 'completado' ? 'Completado' : 'Pendiente', motivo: r.motivo
+  }));
 
-  const progressData = [
-    { estudiante: 'Ana Laura', inicial: 7.2, actual: 7.8 },
-    { estudiante: 'Carlos', inicial: 8.0, actual: 8.5 },
-    { estudiante: 'María', inicial: 8.3, actual: 8.7 },
-    { estudiante: 'Roberto', inicial: 9.0, actual: 9.3 },
-    { estudiante: 'Laura', inicial: 8.8, actual: 9.1 }
-  ];
+  const performanceData = (panel?.rendimiento ?? []).map(p => ({ mes: etiquetaMes(p.mes), promedio: p.promedio }));
+  const progressData = (panel?.progreso ?? []).map(p => ({ estudiante: p.estudiante.split(' ')[0], inicial: p.inicial, actual: p.actual }));
 
-  const exportarPDF = (_idReporte: string) => showMockAction();
-  const exportarTodos = () => showMockAction();
+  const descargar = async (id: string | null) => {
+    if (exportando !== null) return;
+    setExportando(id ?? 'todos');
+    setErrorDescarga('');
+    try {
+      const archivo = id === null ? await descargarReportesTutor() : await descargarReporteTutor(Number(id));
+      guardarArchivo(archivo, id === null ? 'mis-reportes.pdf' : `reporte-${id}.pdf`);
+    } catch (fallo) {
+      setErrorDescarga(mensajeDeError(fallo, 'No se pudo descargar el reporte.'));
+    } finally {
+      setExportando(null);
+    }
+  };
+  const exportarPDF = (idReporte: string) => descargar(idReporte);
+  const exportarTodos = () => descargar(null);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -99,9 +123,9 @@ export function TutorReportsView() {
           </div>
           <p className="text-[#E4F3ED] text-sm mb-1">Estudiantes atendidos</p>
           <p className="font-semibold mb-2">
-            {cargando ? '...' : `${new Set(reportes.map(r => r.estudiante)).size} estudiantes`}
+            {cargando ? '...' : `${panel?.estudiantesAtendidos ?? 0} estudiantes`}
           </p>
-          <p className="text-xs text-[#E4F3ED]">100% de asistencia</p>
+          <p className="text-xs text-[#E4F3ED]">{panel?.asistenciaPorcentaje != null ? `${panel.asistenciaPorcentaje}% de asistencia` : '—'}</p>
         </div>
 
         <div className="bg-gradient-to-br from-[#986314] to-[#986314] rounded-lg p-6 text-white shadow-lg">
@@ -127,7 +151,7 @@ export function TutorReportsView() {
             <LineChart data={performanceData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#DCE3EA" />
               <XAxis dataKey="mes" stroke="#53716E" />
-              <YAxis domain={[7, 10]} stroke="#53716E" />
+              <YAxis domain={[0, 10]} stroke="#53716E" />
               <Tooltip />
               <Legend />
               <Line
@@ -149,7 +173,7 @@ export function TutorReportsView() {
             <BarChart data={progressData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#DCE3EA" />
               <XAxis dataKey="estudiante" stroke="#53716E" />
-              <YAxis domain={[6, 10]} stroke="#53716E" />
+              <YAxis domain={[0, 10]} stroke="#53716E" />
               <Tooltip />
               <Legend />
               <Bar dataKey="inicial" name="Inicial" fill="#53716E" />
@@ -240,19 +264,19 @@ export function TutorReportsView() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg p-4 shadow-sm border-l-4 border-[#1F6662]">
           <p className="text-sm text-[#53716E] mb-1">Promedio general</p>
-          <p className="font-semibold">8.66</p>
+          <p className="font-semibold">{panel?.promedioGeneral != null ? panel.promedioGeneral.toFixed(2) : '—'}</p>
         </div>
         <div className="bg-white rounded-lg p-4 shadow-sm border-l-4 border-[#227F78]">
           <p className="text-sm text-[#53716E] mb-1">Tasa de aprobación</p>
-          <p className="font-semibold">94%</p>
+          <p className="font-semibold">—</p>
         </div>
         <div className="bg-white rounded-lg p-4 shadow-sm border-l-4 border-[#6F548F]">
           <p className="text-sm text-[#53716E] mb-1">Horas de tutoría</p>
-          <p className="font-semibold">42h</p>
+          <p className="font-semibold">{panel?.horasTutoria != null ? `${panel.horasTutoria}h` : '—'}</p>
         </div>
         <div className="bg-white rounded-lg p-4 shadow-sm border-l-4 border-[#986314]">
           <p className="text-sm text-[#53716E] mb-1">Satisfacción</p>
-          <p className="font-semibold">4.8/5.0</p>
+          <p className="font-semibold">—</p>
         </div>
       </div>
     </div>

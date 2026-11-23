@@ -1,38 +1,41 @@
-import { Users, CheckCircle, FileText, Calendar, AlertCircle, Clock } from 'lucide-react';
+import { Users, CheckCircle, FileText, Calendar } from 'lucide-react';
+import { consultarInicioTutor } from '../servicios/inicioTutor';
+import { usarConsultaTutor } from '../servicios/usarConsultaTutor';
+import type { EstudianteInicioTutor } from '../tipos/inicioTutor';
+import { EstadoConsulta } from './ConsultaCoordinacion';
+
+// Mismas etiquetas y colores de riesgo que la pantalla Mis estudiantes.
+function etiquetaRiesgo(nivel: EstudianteInicioTutor['nivelRiesgo']): string {
+  switch (nivel) {
+    case 'alto': return 'Alto';
+    case 'medio': return 'Medio';
+    case 'bajo': return 'Bajo';
+    case 'sin_riesgo': return 'Sin riesgo';
+    default: return 'Sin evaluar';
+  }
+}
+
+function colorRiesgo(nivel: EstudianteInicioTutor['nivelRiesgo']): string {
+  switch (nivel) {
+    case 'alto': return 'bg-[#FCEBED] text-[#B83F4B]';
+    case 'medio': return 'bg-[#FFF3D6] text-[#986314]';
+    case 'bajo':
+    case 'sin_riesgo': return 'bg-[#E4F3ED] text-[#227F78]';
+    default: return 'bg-[#DCE3EA] text-[#0B2828]';
+  }
+}
 
 export function TutorView() {
-  const students = [
-    { name: 'Ana Laura Gómez', career: 'Ingeniería en Software', status: 'Bajo', statusColor: 'bg-[#FCEBED] text-[#B83F4B]' },
-    { name: 'Carlos Méndez Ruiz', career: 'Ingeniería Industrial', status: 'Medio', statusColor: 'bg-[#FFF3D6] text-[#986314]' },
-    { name: 'María Fernández', career: 'Arquitectura', status: 'Medio', statusColor: 'bg-[#FFF3D6] text-[#986314]' },
-    { name: 'Roberto Silva', career: 'Diseño Gráfico', status: 'Alto', statusColor: 'bg-[#E4F3ED] text-[#227F78]' }
-  ];
-
-  const upcomingSessions = [
-    { student: 'Ana Laura Gómez', topic: 'Cálculo diferencial', date: '20 mayo, 2026', time: '10:00 AM', status: 'Confirmada' },
-    { student: 'Carlos Méndez', topic: 'Álgebra lineal', date: '21 mayo, 2026', time: '2:00 PM', status: 'Confirmada' },
-    { student: 'María Fernández', topic: 'Física I', date: '22 mayo, 2026', time: '11:00 AM', status: 'Pendiente' }
-  ];
-
-  const completedSessions = [
-    { student: 'Ana Laura Gómez', topic: 'Cálculo integral', status: 'Completada' },
-    { student: 'Roberto Silva', topic: 'Estadística', status: 'Completada' },
-    { student: 'Carlos Méndez', topic: 'Programación', status: 'Completada' }
-  ];
-
-  const alerts = [
-    { icon: AlertCircle, text: 'Ana Laura requiere seguimiento urgente en matemáticas', color: 'text-[#B83F4B] bg-[#FCEBED]' },
-    { icon: Clock, text: 'Recordatorio: tienes 3 reportes pendientes por entregar', color: 'text-[#986314] bg-[#FFF3D6]' }
-  ];
-
-  const calendarEvents = [
-    { day: 20, label: 'Tutoría', time: '10:00 AM', color: 'bg-[#D3F4EE]' },
-    { day: 21, label: 'Tutoría', time: '2:00 PM', color: 'bg-[#E4F3ED]' },
-    { day: 22, label: 'Reporte', time: '', color: 'bg-[#FFF3D6]' }
-  ];
+  const consulta = usarConsultaTutor(consultarInicioTutor);
+  const inicio = consulta.datos;
+  const students = (inicio?.estudiantesDestacados ?? []).map(e => ({
+    name: e.nombre, career: e.carrera, status: etiquetaRiesgo(e.nivelRiesgo), statusColor: colorRiesgo(e.nivelRiesgo)
+  }));
 
   return (
     <div className="space-y-6">
+      <EstadoConsulta cargando={consulta.cargando} error={consulta.error} alReintentar={consulta.actualizar} />
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 - h full">
         <div className="bg-white rounded-lg p-6 shadow-sm">
@@ -42,7 +45,7 @@ export function TutorView() {
             </div>
             <div>
               <p className="text-sm text-[#53716E]">Mis estudiantes</p>
-              <p className="font-semibold">16</p>
+              <p className="font-semibold">{inicio?.estudiantes ?? '—'}</p>
             </div>
           </div>
         </div>
@@ -54,7 +57,7 @@ export function TutorView() {
             </div>
             <div>
               <p className="text-sm text-[#53716E]">Tutorías realizadas</p>
-              <p className="font-semibold">28</p>
+              <p className="font-semibold">{inicio?.sesionesRealizadas ?? '—'}</p>
             </div>
           </div>
         </div>
@@ -66,7 +69,7 @@ export function TutorView() {
             </div>
             <div>
               <p className="text-sm text-[#53716E]">Reportes pendientes</p>
-              <p className="font-semibold">22</p>
+              <p className="font-semibold">{inicio?.reportesPendientes ?? '—'}</p>
             </div>
           </div>
         </div>
@@ -78,7 +81,7 @@ export function TutorView() {
             </div>
             <div>
               <p className="text-sm text-[#53716E]">Sesiones programadas</p>
-              <p className="font-semibold">5</p>
+              <p className="font-semibold">{inicio?.sesionesProgramadas ?? '—'}</p>
             </div>
           </div>
         </div>

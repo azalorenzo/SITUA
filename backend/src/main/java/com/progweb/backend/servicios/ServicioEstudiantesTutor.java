@@ -38,6 +38,13 @@ public class ServicioEstudiantesTutor {
         return estudiantes.listar(tutor, texto, nivel);
     }
 
+    public com.progweb.backend.respuestas.PaginaEstudiantesTutor consultarPagina(String identificador,com.progweb.backend.solicitudes.FiltrosTutorados filtros){
+        var usuario=autenticacion.consultarSesion(identificador);long tutor=tutorDe(usuario.roles(),usuario.id());
+        long total=estudiantes.contar(tutor,filtros.busqueda(),filtros.riesgo());int paginas=Math.toIntExact((total+filtros.tamano()-1)/filtros.tamano());
+        int pagina=Math.min(filtros.pagina(),Math.max(1,paginas));
+        return new com.progweb.backend.respuestas.PaginaEstudiantesTutor(estudiantes.listarPagina(tutor,filtros.busqueda(),filtros.riesgo(),filtros.tamano(),(pagina-1L)*filtros.tamano()),pagina,filtros.tamano(),total,paginas);
+    }
+
     // Un estudiante que no está asignado a este tutor responde igual que uno inexistente.
     public RespuestaDetalleEstudianteTutor consultarDetalle(String identificador, long estudianteId) {
         var usuario = autenticacion.consultarSesion(identificador);

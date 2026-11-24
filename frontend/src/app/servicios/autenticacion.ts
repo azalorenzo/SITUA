@@ -135,3 +135,5 @@ export async function solicitarArchivoApi(ruta:string):Promise<Blob> {
   if(!respuesta.headers.get('Content-Type')?.includes('application/pdf'))throw new ErrorSolicitud(0,'El servidor no devolvió un PDF válido.');
   return respuesta.blob();
 }
+
+export function cerrarSesionServidor(){return solicitarApi<{mensaje:string}>('/autenticacion/cerrar-sesion',{method:'POST'});}

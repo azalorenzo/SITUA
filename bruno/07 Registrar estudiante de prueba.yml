@@ -1,0 +1,37 @@
+info:
+  name: "Registrar estudiante de prueba"
+  type: "http"
+  seq: 7
+http:
+  method: "POST"
+  url: "https://situa.oaxacoders.tech/api/autenticacion/registrar"
+  body:
+    type: "json"
+    data: |-
+      {
+        "nombre": "Prueba Bruno SITUA",
+        "correo": "{{correo_prueba}}",
+        "matricula": "{{matricula_prueba}}",
+        "contrasena": "BrunoPrueba!2026",
+        "confirmarContrasena": "BrunoPrueba!2026"
+      }
+  auth: "inherit"
+runtime:
+  scripts:
+    - type: "after-response"
+      code: |-
+        if (res.status === 201) { bru.setVar("token_registro", res.body.token); }
+    - type: "tests"
+      code: |-
+        test("Responde HTTP 201", function () {
+          expect(res.status).to.equal(201);
+        });
+        test("El registro crea solo un estudiante", function () {
+          expect(res.body.usuario.roles).to.deep.equal(["estudiante"]);
+        });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

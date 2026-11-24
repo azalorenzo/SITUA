@@ -1,0 +1,40 @@
+info:
+  name: "Crear aviso para cuentas de prueba"
+  type: "http"
+  seq: 63
+http:
+  method: "POST"
+  url: "https://situa.oaxacoders.tech/api/coordinacion/avisos"
+  body:
+    type: "json"
+    data: |-
+      {
+        "titulo": "{{titulo_aviso}}",
+        "descripcion": "Aviso de prueba Bruno SITUA",
+        "categoria": "general",
+        "prioridad": "normal",
+        "destinatarios": "seleccion",
+        "usuarioIds": [
+          {{usuario_tutor}},
+          {{usuario_estudiante}}
+        ]
+      }
+  auth:
+    type: "bearer"
+    token: "{{token_coordinacion}}"
+runtime:
+  scripts:
+    - type: "after-response"
+      code: |-
+        if (res.status === 201) { bru.setVar("aviso_prueba", res.body.aviso.id); }
+    - type: "tests"
+      code: |-
+        test("Responde HTTP 201", function () {
+          expect(res.status).to.equal(201);
+        });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

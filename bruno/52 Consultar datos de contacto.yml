@@ -1,0 +1,23 @@
+info:
+  name: "Consultar datos de contacto"
+  type: "http"
+  seq: 52
+http:
+  method: "GET"
+  url: "https://situa.oaxacoders.tech/api/estudiante/contacto"
+  auth:
+    type: "bearer"
+    token: "{{token_estudiante}}"
+runtime:
+  scripts:
+    - type: "tests"
+      code: |-
+        test("Responde HTTP 200", function () {
+          expect(res.status).to.equal(200);
+        });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

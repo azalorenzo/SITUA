@@ -94,3 +94,24 @@ Inicio y reportes tenían implementaciones distintas. Se conservaron los contrat
 La mensajería del estudiante sigue pendiente; la integración del tutor no crea conversaciones nuevas ni incorpora WebSocket. La búsqueda de conversaciones de esta implementación entrante sigue siendo local y se limita a la lista recibida.
 
 Verificación: 286 pruebas del backend aprobadas, compilación del frontend correcta y seis comprobaciones de navegador para mensajes reales entre cuentas temporales. Inicio y reportes respondieron correctamente con la sesión del tutor. Se limpiaron los registros temporales. Los commits usan la identidad configurada del propietario y conservan los autores originales de la rama fusionada, sin añadir coautoría del asistente. La rama quedó local, sin publicar en GitHub.
+
+## Avance posterior: mensajes del estudiante y del tutor
+
+Los dos portales comparten la conversación real y permiten enviar, recibir y guardar lecturas. Las asignaciones activas generan el contacto al abrir Mensajes, con una pareja única en V6. Se conserva el diseño y se elimina la información ficticia del estudiante. La búsqueda se ejecuta en el servidor y los mensajes se consultan periódicamente mientras la pantalla está abierta. No se implementaron WebSocket, adjuntos, llamadas ni un indicador global fuera de Mensajes.
+
+Pasaron 294 pruebas del backend y quince comprobaciones entre Brave y Edge, incluidos creación simultánea sin duplicados, intercambio sin recargar, persistencia, búsqueda, lecturas y rechazo de acceso ajeno. Los datos temporales fueron eliminados. No se añadieron pruebas Bruno ni comentarios en el código nuevo.
+
+## Avance posterior: seguridad de sesiones y consultas del tutor
+
+Backend incorpora cierre del JWT actual, rechazo global de tokens revocados y versión de sesión para invalidar los JWT anteriores tras recuperar la contraseña. La recuperación aplica la misma regla de contraseña fuerte en Bean Validation. V7 incorpora la versión persistente del usuario.
+
+Se prepararon rutas paginadas para tutorados y avisos, con filtros en SQL, y el intervalo y resumen de Horarios desde el servidor. Las rutas previas conservan su formato para no romper las pantallas existentes. No se modificó React en este bloque; quedan pendientes los llamados al cierre y la conexión de páginas, fechas y resumen en frontend.
+
+Verificación del bloque: 309 pruebas del backend y 197 comprobaciones adicionales de API y permisos aprobadas. V7 aplicada; registros temporales eliminados. El botón Salir y las consultas actuales de React todavía necesitan conectarse a los nuevos endpoints. No se hizo commit ni push.
+
+
+## Avance posterior: conexión de pantallas y navegación
+
+Salir ya invalida el JWT en el servidor. Mis tutorados y Avisos del tutor utilizan las páginas y filtros SQL; Horarios envía intervalos y consulta sus contadores. Aceptar y Rechazar en Avisos modifican la sesión real con confirmación dentro de la aplicación. Navbar y perfil se comparten entre roles y la navegación se adapta a móvil.
+
+Pasaron 309 pruebas generales y 11 de Avisos posteriores, compilación de producción y 74 comprobaciones automatizadas de interfaz. Se revisaron las 18 pantallas a 1440 y 390 píxeles y las acciones con datos temporales eliminados al terminar. Sin Bruno, commit ni push.

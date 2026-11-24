@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { consultarSesion, guardarSesion, limpiarSesion, obtenerToken, obtenerVencimiento, ErrorSolicitud } from './servicios/autenticacion';
+import { useEffect, useRef, useState } from 'react';
+import { cerrarSesionServidor, consultarSesion, guardarSesion, limpiarSesion, obtenerToken, obtenerVencimiento, ErrorSolicitud } from './servicios/autenticacion';
 import type { UsuarioSesion, RespuestaInicioSesion } from './tipos/autenticacion';
 import { Sidebar } from './components/Sidebar';
 import { InicioCoordinacion } from './components/InicioCoordinacion';
@@ -21,6 +21,8 @@ export default function App() {
   const [mensajeSesion, cambiarMensajeSesion] = useState('');
   const [vencimiento, cambiarVencimiento] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState('inicio');
+  const [menuAbierto,cambiarMenu]=useState(false),[cerrando,cambiarCierre]=useState(false),[errorCierre,cambiarErrorCierre]=useState('');
+  const cierreEnCurso=useRef(false);
 
   useEffect(() => {
     let vigente = true;
@@ -45,10 +47,18 @@ export default function App() {
     return () => window.clearTimeout(aviso);
   }, [usuario, vencimiento]);
 
-  const cerrarSesion = () => {
+  const limpiarAcceso = () => {
+    cambiarMenu(false);
     limpiarSesion(); cambiarUsuario(null); cambiarVencimiento(null);
     cambiarMensajeSesion(''); setActiveSection('inicio');
   };
+  const cerrarSesion=async()=>{
+    if(cierreEnCurso.current)return;cierreEnCurso.current=true;cambiarCierre(true);cambiarErrorCierre('');
+    try{await cerrarSesionServidor();limpiarAcceso();}
+    catch(fallo){if(fallo instanceof ErrorSolicitud&&fallo.estado===401)limpiarAcceso();else cambiarErrorCierre(fallo instanceof Error?fallo.message:'No se pudo cerrar la sesión.');}
+    finally{cierreEnCurso.current=false;cambiarCierre(false);}
+  };
+  const avisoCierre=errorCierre?<div role="alert" className="fixed top-3 left-1/2 -translate-x-1/2 z-[100] w-[calc(100%-2rem)] max-w-md rounded-lg border border-[#B83F4B] bg-white text-[#B83F4B] p-4 shadow-lg"><p>{errorCierre}</p><button type="button" disabled={cerrando} className="mt-2 underline" onClick={cerrarSesion}>Reintentar</button></div>:null;
   const recibirSesion = (respuesta: RespuestaInicioSesion, recordar: boolean) => {
     guardarSesion(respuesta, recordar); cambiarUsuario(respuesta.usuario);
     cambiarVencimiento(respuesta.venceEn); cambiarMensajeSesion(''); setActiveSection('inicio');
@@ -62,7 +72,7 @@ export default function App() {
   if (rolUsuario === 'student') {
     return (
       <div>
-        <StudentApp onLogout={cerrarSesion} usuario={usuario} />
+        {avisoCierre}<StudentApp onLogout={cerrarSesion} usuario={usuario} cerrando={cerrando}/>
       </div>
     );
   }
@@ -70,19 +80,19 @@ export default function App() {
   if (rolUsuario === 'tutor') {
     return (
       <div>
-        <TutorApp onLogout={cerrarSesion} usuario={usuario} />
+        {avisoCierre}<TutorApp onLogout={cerrarSesion} usuario={usuario} cerrando={cerrando}/>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen bg-[#F5F7FA] text-[#0B2828]">
-      <Sidebar activeSection={activeSection} onSectionChange={setActiveSection}/>
+    <div className="flex h-dvh bg-[#F5F7FA] text-[#0B2828]">
+      {avisoCierre}<Sidebar activeSection={activeSection} onSectionChange={setActiveSection} abierto={menuAbierto} alCerrar={()=>cambiarMenu(false)}/>
       <main className="flex-1 min-w-0 overflow-auto">
-        <BarraCoordinacion usuario={usuario} alCerrarSesion={cerrarSesion}/>
+        <BarraCoordinacion usuario={usuario} alCerrarSesion={cerrarSesion} cerrando={cerrando} alAbrirMenu={()=>cambiarMenu(true)} menuAbierto={menuAbierto}/>
 
         {/* Aquí se muestra la sección elegida en el menú. */}
-        <div className="p-8">
+        <div className="p-4 sm:p-8">
           {activeSection === 'inicio' && <InicioCoordinacion />}
 
           {activeSection === 'reportes' && <ReportsView />}

@@ -1,0 +1,54 @@
+info:
+  name: "Iniciar sesión coordinacion"
+  type: "http"
+  seq: 1
+http:
+  method: "POST"
+  url: "https://situa.oaxacoders.tech/api/autenticacion/iniciar-sesion"
+  body:
+    type: "json"
+    data: |-
+      {
+        "correo": "coordinacion@demo.example",
+        "contrasena": "CoordDemo!2026"
+      }
+  auth: "inherit"
+runtime:
+  scripts:
+    - type: "before-request"
+      code: |-
+        const marca = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+        bru.setVar("marca", marca);
+        bru.setVar("correo_prueba", "bruno-situa-" + marca + "@example.invalid");
+        bru.setVar("matricula_prueba", "BRUNO-" + marca);
+        bru.setVar("titulo_aviso", "Prueba Bruno SITUA " + marca);
+        bru.setVar("titulo_actividad", "Recordatorio Bruno " + marca);
+        const inicio = new Date(Date.now() + 30 * 86400000);
+        inicio.setUTCHours(7 + Math.floor(Math.random() * 10), 0, 0, 0);
+        const fin = new Date(inicio.getTime() + 3600000);
+        bru.setVar("inicio_horario", inicio.toISOString().slice(0, 19));
+        bru.setVar("fin_horario", fin.toISOString().slice(0, 19));
+        bru.setVar("desde_horarios", new Date(inicio.getTime() - 86400000).toISOString().slice(0, 19));
+        bru.setVar("hasta_horarios", new Date(fin.getTime() + 86400000).toISOString().slice(0, 19));
+        console.log("Cuenta de prueba: " + bru.getVar("correo_prueba"));
+    - type: "after-response"
+      code: |-
+        if (res.status === 200) {
+          bru.setVar("token_coordinacion", res.body.token);
+          bru.setVar("usuario_coordinacion", res.body.usuario.id);
+        }
+    - type: "tests"
+      code: |-
+        test("Responde HTTP 200", function () {
+          expect(res.status).to.equal(200);
+        });
+        test("Entrega un JWT y datos del usuario", function () {
+          expect(res.body.token).to.be.a("string");
+          expect(res.body.usuario.roles).to.include("coordinador");
+        });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

@@ -1,0 +1,36 @@
+info:
+  name: "Editar recordatorio de prueba"
+  type: "http"
+  seq: 60
+http:
+  method: "PUT"
+  url: "https://situa.oaxacoders.tech/api/estudiante/actividades/{{actividad_prueba}}"
+  body:
+    type: "json"
+    data: |-
+      {
+        "titulo": "Recordatorio editado {{marca}}",
+        "descripcion": "Prueba de la colección SITUA",
+        "tipo": "recordatorio",
+        "fecha": null,
+        "inicioEn": null,
+        "finEn": null,
+        "responsable": null,
+        "ubicacion": null
+      }
+  auth:
+    type: "bearer"
+    token: "{{token_estudiante}}"
+runtime:
+  scripts:
+    - type: "tests"
+      code: |-
+        test("Responde HTTP 200", function () {
+          expect(res.status).to.equal(200);
+        });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

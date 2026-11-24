@@ -1,0 +1,38 @@
+info:
+  name: "Iniciar sesión estudiante"
+  type: "http"
+  seq: 3
+http:
+  method: "POST"
+  url: "https://situa.oaxacoders.tech/api/autenticacion/iniciar-sesion"
+  body:
+    type: "json"
+    data: |-
+      {
+        "correo": "estudiante@demo.example",
+        "contrasena": "AlumnoDemo!2026"
+      }
+  auth: "inherit"
+runtime:
+  scripts:
+    - type: "after-response"
+      code: |-
+        if (res.status === 200) {
+          bru.setVar("token_estudiante", res.body.token);
+          bru.setVar("usuario_estudiante", res.body.usuario.id);
+        }
+    - type: "tests"
+      code: |-
+        test("Responde HTTP 200", function () {
+          expect(res.status).to.equal(200);
+        });
+        test("Entrega un JWT y datos del usuario", function () {
+          expect(res.body.token).to.be.a("string");
+          expect(res.body.usuario.roles).to.include("estudiante");
+        });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

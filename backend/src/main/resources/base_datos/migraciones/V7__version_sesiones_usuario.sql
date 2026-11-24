@@ -1,0 +1,1 @@
+ALTER TABLE usuarios ADD version_sesion BIGINT UNSIGNED NOT NULL DEFAULT 0;

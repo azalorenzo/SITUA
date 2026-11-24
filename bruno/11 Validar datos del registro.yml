@@ -1,0 +1,32 @@
+info:
+  name: "Validar datos del registro"
+  type: "http"
+  seq: 11
+http:
+  method: "POST"
+  url: "https://situa.oaxacoders.tech/api/autenticacion/registrar"
+  body:
+    type: "json"
+    data: |-
+      {
+        "nombre": "",
+        "correo": "incorrecto",
+        "matricula": "",
+        "contrasena": "123",
+        "confirmarContrasena": "123"
+      }
+  auth: "inherit"
+runtime:
+  scripts:
+    - type: "tests"
+      code: |-
+        test("Responde HTTP 422", function () {
+          expect(res.status).to.equal(422);
+        });
+        test("Devuelve errores por campo", function () { expect(res.body.erroresPorCampo).to.be.an("object"); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

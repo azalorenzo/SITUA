@@ -1,0 +1,23 @@
+info:
+  name: "Rechazar sesión cerrada registro"
+  type: "http"
+  seq: 73
+http:
+  method: "GET"
+  url: "https://situa.oaxacoders.tech/api/autenticacion/sesion"
+  auth:
+    type: "bearer"
+    token: "{{token_registro}}"
+runtime:
+  scripts:
+    - type: "tests"
+      code: |-
+        test("Responde HTTP 401", function () {
+          expect(res.status).to.equal(401);
+        });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

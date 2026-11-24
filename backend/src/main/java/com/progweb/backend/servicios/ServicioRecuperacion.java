@@ -70,7 +70,7 @@ public class ServicioRecuperacion {
             consultas.update("UPDATE recuperaciones_contrasena SET intentos=intentos+1 WHERE usuario_id=?",cuenta.id());
             throw codigoInvalido();
         }
-        consultas.update("UPDATE usuarios SET password_hash=? WHERE id=?",codificador.encode(solicitud.contrasena()),cuenta.id());
+        consultas.update("UPDATE usuarios SET password_hash=?,version_sesion=version_sesion+1 WHERE id=?",codificador.encode(solicitud.contrasena()),cuenta.id());
         consultas.update("UPDATE recuperaciones_contrasena SET utilizado=true WHERE usuario_id=?",cuenta.id());
     }
     private SolicitudRechazada codigoInvalido() { return new SolicitudRechazada(422,"El código no es válido o ya venció. Solicita uno nuevo.","codigo"); }

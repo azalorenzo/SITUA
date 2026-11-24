@@ -16,8 +16,9 @@ public class ServicioSesionesAgenda {
     private final ServicioAutenticacion autenticacion;
     private final Clock reloj;
     private final ServicioVencimientoSesiones vencimiento;
-    public ServicioSesionesAgenda(RepositorioSesionesAgenda sesiones,ServicioAutenticacion autenticacion,Clock reloj,ServicioVencimientoSesiones vencimiento) {
-        this.sesiones=sesiones;this.autenticacion=autenticacion;this.reloj=reloj;this.vencimiento=vencimiento;
+    private final ServicioAvisosTelefonicos avisosTelefonicos;
+    public ServicioSesionesAgenda(RepositorioSesionesAgenda sesiones,ServicioAutenticacion autenticacion,Clock reloj,ServicioVencimientoSesiones vencimiento,ServicioAvisosTelefonicos avisosTelefonicos) {
+        this.sesiones=sesiones;this.autenticacion=autenticacion;this.reloj=reloj;this.vencimiento=vencimiento;this.avisosTelefonicos=avisosTelefonicos;
     }
     private LocalDateTime ahora() { return LocalDateTime.ofInstant(reloj.instant(),ZoneOffset.UTC); }
     private record Persona(long usuario,long perfil,boolean esTutor) { }
@@ -105,6 +106,7 @@ public class ServicioSesionesAgenda {
         }
         sesiones.cambiarEstado(id,nuevo);
         sesiones.registrarCambio(id,persona.usuario(),cancelar?"cancelacion":accion.equals("confirmar")?"aceptacion":"rechazo",sesion.estado(),nuevo,sesion.inicio(),sesion.fin());
+        if(nuevo.equals("confirmada"))avisosTelefonicos.preparar(id);
         return sesiones.respuesta(id,persona.perfil(),esTutor,ahora());
     }
 }

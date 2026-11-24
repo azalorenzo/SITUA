@@ -47,6 +47,13 @@ public class ServicioHorarios {
         return repositorio.listarPorTutor(tutorId);
     }
 
+    public List<RespuestaHorario> listarPropios(String identificador,com.progweb.backend.solicitudes.FiltrosHorarios filtros){
+        return repositorio.listarPorTutor(verificarTutor(identificador),filtros.desde(),filtros.hasta());
+    }
+    public com.progweb.backend.respuestas.ResumenHorarios resumen(String identificador,com.progweb.backend.solicitudes.FiltrosHorarios filtros){
+        return repositorio.resumen(verificarTutor(identificador),filtros.desde(),filtros.hasta());
+    }
+
     private void validarIntervalo(SolicitudHorario solicitud) {
         if (!solicitud.finEn().isAfter(solicitud.inicioEn())) {
             throw new SolicitudRechazada(422, "La hora de fin debe ser posterior a la hora de inicio.", "finEn");

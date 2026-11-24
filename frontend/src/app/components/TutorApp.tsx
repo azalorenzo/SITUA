@@ -1,58 +1,23 @@
-import type { UsuarioSesion } from '../tipos/autenticacion';
 import { useState } from 'react';
+import type { UsuarioSesion } from '../tipos/autenticacion';
 import { TutorSidebar } from './TutorSidebar';
+import { BarraUsuario } from './BarraUsuario';
+
 import { TutorView } from './TutorView';
 import { MyStudentsView } from './MyStudentsView';
 import { ScheduleView } from './ScheduleView';
 import { CompletedSessionsView } from './CompletedSessionsView';
 import { TutorReportsView } from './TutorReportsView';
-import { TutorNotificationsView } from './TutorNotificationsView';
 import { MessagesView } from './MessagesView';
-
-export function TutorApp({ onLogout, usuario }: { onLogout: () => void; usuario: UsuarioSesion }) {
-  const [activeSection, setActiveSection] = useState('inicio');
-  const nombreTutor = usuario.nombre;
-
-  return (
-    <div className="flex h-screen bg-[#F5F7FA] text-[#0B2828]">
-      <TutorSidebar onLogout={onLogout} correoUsuario={usuario.correo} avatarUsuario={usuario.avatarUrl}
-        activeSection={activeSection}
-        onSectionChange={setActiveSection}
-        nombreTutor={nombreTutor}
-      />
-
-      <main className="flex-1 overflow-auto">
-        {/* Header solo en inicio */}
-        {activeSection === 'inicio' && (
-          <header className="bg-white shadow-sm sticky top-0 z-10">
-            <div className="px-8 py-4 flex justify-between items-center">
-              <div>
-                <h2 className="font-semibold">¡Hola {nombreTutor.toUpperCase()}!</h2>
-                <p className="text-sm text-[#53716E]">Gestiona tus estudiantes y tutorías</p>
-              </div>
-            </div>
-          </header>
-        )}
-
-        {/* Content */}
-        <div className="p-8">
-          {activeSection === 'inicio'             && <TutorView onSectionChange={setActiveSection} />}
-          {activeSection === 'mis-estudiantes'    && <MyStudentsView />}
-          {activeSection === 'horarios'           && <ScheduleView />}
-          {activeSection === 'sesiones-realizadas'&& <CompletedSessionsView />}
-          {activeSection === 'reportes'           && <TutorReportsView />}
-          {activeSection === 'mensajes'           && <MessagesView />}
-          {activeSection === 'avisos'             && <TutorNotificationsView />}
-
-          {!['inicio','mis-estudiantes','horarios','sesiones-realizadas','reportes','mensajes','avisos']
-            .includes(activeSection) && (
-            <div className="bg-white rounded-lg p-12 text-center shadow-sm">
-              <h3 className="font-semibold mb-2">Sección en desarrollo</h3>
-              <p className="text-[#53716E]">Esta sección estará disponible próximamente</p>
-            </div>
-          )}
-        </div>
-      </main>
-    </div>
-  );
+import { TutorNotificationsView } from './TutorNotificationsView';
+export function TutorApp({onLogout,usuario,cerrando=false}:{onLogout:()=>void;usuario:UsuarioSesion;cerrando?:boolean}){
+ const [seccion,cambiarSeccion]=useState('inicio'),[menuAbierto,cambiarMenu]=useState(false);
+ return <div className="flex h-dvh bg-[#F5F7FA] text-[#0B2828]"><TutorSidebar activeSection={seccion} onSectionChange={cambiarSeccion} abierto={menuAbierto} alCerrar={()=>cambiarMenu(false)}/>
+  <main className="flex-1 min-w-0 overflow-auto"><BarraUsuario usuario={usuario} rol="Tutor" alCerrarSesion={onLogout} cerrando={cerrando} alAbrirMenu={()=>cambiarMenu(true)} menuAbierto={menuAbierto}/><div className="p-4 sm:p-8">{seccion==='inicio'&&<TutorView onSectionChange={cambiarSeccion}/>}
+{seccion==='mis-estudiantes'&&<MyStudentsView/>}
+{seccion==='horarios'&&<ScheduleView/>}
+{seccion==='sesiones-realizadas'&&<CompletedSessionsView/>}
+{seccion==='reportes'&&<TutorReportsView/>}
+{seccion==='mensajes'&&<MessagesView/>}
+{seccion==='avisos'&&<TutorNotificationsView/>}</div></main></div>;
 }

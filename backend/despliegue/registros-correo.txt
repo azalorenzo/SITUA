@@ -1,0 +1,11 @@
+Zona: oaxacoders.tech
+
+Tipo: TXT
+Nombre: situa
+Valor: v=spf1 ip4:3.144.252.175 -all
+
+Tipo: TXT
+Nombre: tutoria._domainkey.situa
+Valor: v=DKIM1; h=sha256; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAu6tsVS7T6tdGzBGOAqGZ5zy+DiKJmcsem6H232Q9N7odxHSbkYS7FHD5AfcYlDBjihzQMJj9jn+q8AmCmpoQGQXahkaHmILNbjhAQnxcY9yR842/N8ecTfavN9h5Zfa6O5zGpYn0J9vG5zCwpwUgVrcgdN4cVc+dxqQV4Ej8IMfRS+7b1sFUf4nKMfHlQTc/GuiakbVfdcHw+/K18rdFeQ7RiCdgnhLY9GMtg9pVSqgN9bqOJlskuV2lSs5yECLYhEqveXAmwUjqVmpNZjRHqnvFJK0J0MsjhgOxa/1u0lZ+mx7yUOZy68GdIKZvQ6AKv3lXAZ04W6yak/cPX39DHwIDAQAB
+
+PTR de 3.144.252.175: situa.oaxacoders.tech (se configura en AWS)

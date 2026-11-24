@@ -69,7 +69,7 @@ export default function InicioSesion({ alIngresar, mensajeInicial = '' }: Propie
         </div>
 
         <div className="panel-formulario-acceso">
-          <p className="nombre-sistema-acceso">Control Académico</p>
+          <p className="nombre-sistema-acceso">SITUA</p>
           {recuperacion ? <RecuperarContrasena correoInicial={correo} alVolver={(direccion,exito)=>{cambiarCorreo(direccion);cambiarRecuperacion(false);cambiarContrasena('');cambiarErrores({});cambiarMensaje('');cambiarAviso(exito||'');}}/> : registro ? <RegistroCuenta alIngresar={alIngresar} alVolver={() => cambiarRegistro(false)} /> : <>
           <header className="encabezado-acceso">
             <h1 id="titulo-inicio-sesion">Iniciar sesión</h1>

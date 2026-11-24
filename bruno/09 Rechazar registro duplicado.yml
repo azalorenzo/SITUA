@@ -1,0 +1,31 @@
+info:
+  name: "Rechazar registro duplicado"
+  type: "http"
+  seq: 9
+http:
+  method: "POST"
+  url: "https://situa.oaxacoders.tech/api/autenticacion/registrar"
+  body:
+    type: "json"
+    data: |-
+      {
+        "nombre": "Prueba Bruno SITUA",
+        "correo": "{{correo_prueba}}",
+        "matricula": "{{matricula_prueba}}",
+        "contrasena": "BrunoPrueba!2026",
+        "confirmarContrasena": "BrunoPrueba!2026"
+      }
+  auth: "inherit"
+runtime:
+  scripts:
+    - type: "tests"
+      code: |-
+        test("Responde HTTP 409", function () {
+          expect(res.status).to.equal(409);
+        });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

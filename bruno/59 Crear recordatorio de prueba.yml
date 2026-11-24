@@ -1,0 +1,39 @@
+info:
+  name: "Crear recordatorio de prueba"
+  type: "http"
+  seq: 59
+http:
+  method: "POST"
+  url: "https://situa.oaxacoders.tech/api/estudiante/actividades"
+  body:
+    type: "json"
+    data: |-
+      {
+        "titulo": "{{titulo_actividad}}",
+        "descripcion": "Prueba de la colección SITUA",
+        "tipo": "recordatorio",
+        "fecha": null,
+        "inicioEn": null,
+        "finEn": null,
+        "responsable": null,
+        "ubicacion": null
+      }
+  auth:
+    type: "bearer"
+    token: "{{token_estudiante}}"
+runtime:
+  scripts:
+    - type: "after-response"
+      code: |-
+        if (res.status === 201) { bru.setVar("actividad_prueba", res.body.id); }
+    - type: "tests"
+      code: |-
+        test("Responde HTTP 201", function () {
+          expect(res.status).to.equal(201);
+        });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

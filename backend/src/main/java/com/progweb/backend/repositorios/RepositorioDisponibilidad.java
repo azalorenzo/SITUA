@@ -47,6 +47,20 @@ public class RepositorioDisponibilidad {
         return consultas.query(CONSULTA + " WHERE d.tutor_id = ? ORDER BY d.inicio_en", convertir, tutorId);
     }
 
+    private static final String INTERVALO=" WHERE d.tutor_id=? AND (? IS NULL OR d.fin_en>?) AND (? IS NULL OR d.inicio_en<?)";
+    public List<RespuestaHorario> listarPorTutor(long tutor,LocalDateTime desde,LocalDateTime hasta){
+        return consultas.query(CONSULTA+INTERVALO+" ORDER BY d.inicio_en,d.id",convertir,tutor,desde,desde,hasta,hasta);
+    }
+    public com.progweb.backend.respuestas.ResumenHorarios resumen(long tutor,LocalDateTime desde,LocalDateTime hasta){
+        return consultas.queryForObject("""
+            SELECT COUNT(*) total,
+                COALESCE(SUM(estado='habilitada' AND estudiante IS NULL),0) disponibles,
+                COALESCE(SUM(estudiante IS NOT NULL),0) ocupados,
+                COALESCE(SUM(estado='bloqueada'),0) bloqueados
+            FROM (
+            """+CONSULTA+INTERVALO+") horarios",(fila,posicion)->new com.progweb.backend.respuestas.ResumenHorarios(fila.getLong("total"),fila.getLong("disponibles"),fila.getLong("ocupados"),fila.getLong("bloqueados")),tutor,desde,desde,hasta,hasta);
+    }
+
     public Optional<RespuestaHorario> buscar(long id) {
         return consultas.query(CONSULTA + " WHERE d.id = ?", convertir, id).stream().findFirst();
     }

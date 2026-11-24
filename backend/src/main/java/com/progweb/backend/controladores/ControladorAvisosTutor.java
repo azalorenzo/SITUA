@@ -23,6 +23,12 @@ public class ControladorAvisosTutor {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(servicio.consultar(token.getSubject()));
     }
 
+    @GetMapping("/pagina")
+    public ResponseEntity<com.progweb.backend.respuestas.PaginaAvisosRecibidos> pagina(@AuthenticationPrincipal Jwt token,
+            @jakarta.validation.Valid @ModelAttribute com.progweb.backend.solicitudes.FiltrosAvisosRecibidos filtros){
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(servicio.consultarPagina(token.getSubject(),filtros));
+    }
+
     @PatchMapping("/{id}/leer")
     public ResponseEntity<RespuestaAvisoRecibido> marcarLeido(@PathVariable long id, @AuthenticationPrincipal Jwt token) {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(servicio.marcarLeido(token.getSubject(), id));

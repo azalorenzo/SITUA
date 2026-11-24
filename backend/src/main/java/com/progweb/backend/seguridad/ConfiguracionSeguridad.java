@@ -64,13 +64,13 @@ public class ConfiguracionSeguridad {
     }
 
     @Bean
-    public JwtDecoder lectorJwt(SecretKey claveFirma) {
+    public JwtDecoder lectorJwt(SecretKey claveFirma,ValidadorSesionJwt sesiones) {
         NimbusJwtDecoder lector = NimbusJwtDecoder.withSecretKey(claveFirma)
                 .macAlgorithm(MacAlgorithm.HS256).build();
         lector.setJwtValidator(new DelegatingOAuth2TokenValidator<>(
                 new JwtTimestampValidator(Duration.ZERO), new JwtIssuerValidator("tutoria-api"),
                 new JwtClaimValidator<List<String>>("aud",
-                        audiencias -> audiencias != null && audiencias.contains("tutoria-web"))));
+                        audiencias -> audiencias != null && audiencias.contains("tutoria-web")),sesiones));
         return lector;
     }
 

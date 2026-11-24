@@ -1,0 +1,24 @@
+info:
+  name: "Marcar aviso de prueba leído en estudiante"
+  type: "http"
+  seq: 69
+http:
+  method: "PATCH"
+  url: "https://situa.oaxacoders.tech/api/estudiante/avisos/{{aviso_prueba}}/leer"
+  auth:
+    type: "bearer"
+    token: "{{token_estudiante}}"
+runtime:
+  scripts:
+    - type: "tests"
+      code: |-
+        test("Responde HTTP 200", function () {
+          expect(res.status).to.equal(200);
+        });
+        test("Guarda lectura individual", function () { expect(res.body.leidoEn).to.be.a("string"); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

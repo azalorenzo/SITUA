@@ -187,4 +187,94 @@ class MensajesTutorPruebas {
         conversaciones(autorizacionCoordinador).andExpect(status().isForbidden());
         enviar(autorizacionCoordinador, conversacionAna, new HashMap<>(Map.of("contenido", "Hola"))).andExpect(status().isForbidden());
     }
+    String rutaEstudiante() { return "/api/estudiante/mensajes/conversaciones"; }
+
+    @Test
+    void elEstudianteConsultaYSoloEnviaComoSuCuenta() throws Exception {
+        cliente.perform(get(rutaEstudiante()).header("Authorization",autorizacionEstudiante))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].nombre").value("Tutora de prueba"));
+        cliente.perform(post(rutaEstudiante()+"/"+conversacionAna+"/mensajes").header("Authorization",autorizacionEstudiante)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"contenido\":\"Respuesta del estudiante\",\"emisorId\":"+usuarioTutor+"}"))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.enviado").value(true));
+        assertThat(consultas.queryForObject("SELECT emisor_id FROM mensajes WHERE conversacion_id=? AND contenido='Respuesta del estudiante'",Long.class,conversacionAna)).isEqualTo(usuarioAna);
+        mensajes(autorizacionTutor,conversacionAna).andExpect(jsonPath("$[3].contenido").value("Respuesta del estudiante"))
+                .andExpect(jsonPath("$[3].enviado").value(false));
+    }
+
+    @Test
+    void elEstudianteNoConsultaEnviaNiLeeConversacionesAjenas() throws Exception {
+        String ruta=rutaEstudiante()+"/"+conversacionBeto;
+        cliente.perform(get(ruta+"/mensajes").header("Authorization",autorizacionEstudiante)).andExpect(status().isNotFound());
+        cliente.perform(patch(ruta+"/leer").header("Authorization",autorizacionEstudiante)).andExpect(status().isNotFound());
+        cliente.perform(post(ruta+"/mensajes").header("Authorization",autorizacionEstudiante).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"contenido\":\"Ajeno\"}")).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void losDosRolesRecibenLosMensajesDeLaOtraPersona() throws Exception {
+        enviar(autorizacionTutor,conversacionAna,new HashMap<>(Map.of("contenido","Respuesta real del tutor"))).andExpect(status().isCreated());
+        cliente.perform(get(rutaEstudiante()+"/"+conversacionAna+"/mensajes").header("Authorization",autorizacionEstudiante))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[3].contenido").value("Respuesta real del tutor"))
+                .andExpect(jsonPath("$[3].enviado").value(false));
+    }
+
+    @Test
+    void laLecturaDelEstudianteNoAfectaLaDelTutor() throws Exception {
+        cliente.perform(patch(rutaEstudiante()+"/"+conversacionAna+"/leer").header("Authorization",autorizacionEstudiante)).andExpect(status().isOk());
+        cliente.perform(get(rutaEstudiante()).header("Authorization",autorizacionEstudiante)).andExpect(jsonPath("$[0].noLeidos").value(0));
+        conversaciones(autorizacionTutor).andExpect(jsonPath("$[0].noLeidos").value(2));
+    }
+
+    @Test
+    void soloMarcaMensajesConsultadosAunqueCompartanLaHora() throws Exception {
+        long primero=insertar("INSERT INTO mensajes(conversacion_id,emisor_id,contenido,enviado_en) VALUES (?,?,?,?)",conversacionAna,usuarioTutor,"Primero","2030-01-01 10:00:00");
+        insertar("INSERT INTO mensajes(conversacion_id,emisor_id,contenido,enviado_en) VALUES (?,?,?,?)",conversacionAna,usuarioTutor,"Segundo","2030-01-01 10:00:00");
+        cliente.perform(patch(rutaEstudiante()+"/"+conversacionAna+"/leer").param("ultimoMensajeId",String.valueOf(primero))
+                .header("Authorization",autorizacionEstudiante)).andExpect(status().isOk());
+        cliente.perform(get(rutaEstudiante()).header("Authorization",autorizacionEstudiante)).andExpect(jsonPath("$[0].noLeidos").value(1));
+        cliente.perform(patch(rutaEstudiante()+"/"+conversacionAna+"/leer").param("ultimoMensajeId","999999999")
+                .header("Authorization",autorizacionEstudiante)).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void laBusquedaSeAplicaEnElServidorSinComodinesNiConversacionesAjenas() throws Exception {
+        cliente.perform(get(rutaEstudiante()).param("busqueda","Tutora").header("Authorization",autorizacionEstudiante)).andExpect(jsonPath("$.length()").value(1));
+        cliente.perform(get(rutaEstudiante()).param("busqueda","Otro").header("Authorization",autorizacionEstudiante)).andExpect(jsonPath("$.length()").value(0));
+        cliente.perform(get(rutaEstudiante()).param("busqueda","%").header("Authorization",autorizacionEstudiante)).andExpect(jsonPath("$.length()").value(0));
+        cliente.perform(get(rutaEstudiante()).param("busqueda","a".repeat(201)).header("Authorization",autorizacionEstudiante)).andExpect(status().isUnprocessableContent());
+    }
+
+    @Test
+    void exigeRolEstudianteYValidaElContenido() throws Exception {
+        cliente.perform(get(rutaEstudiante())).andExpect(status().isUnauthorized());
+        cliente.perform(get(rutaEstudiante()).header("Authorization",autorizacionTutor)).andExpect(status().isForbidden());
+        cliente.perform(get(rutaEstudiante()).header("Authorization",autorizacionCoordinador)).andExpect(status().isForbidden());
+        for(String contenido:List.of("   ","a".repeat(4001))) cliente.perform(post(rutaEstudiante()+"/"+conversacionAna+"/mensajes")
+                .header("Authorization",autorizacionEstudiante).contentType(MediaType.APPLICATION_JSON)
+                .content(conversor.writeValueAsString(Map.of("contenido",contenido)))).andExpect(status().isUnprocessableContent());
+    }
+
+    @Test
+    void creaUnaSolaConversacionConElTutorAsignadoYConservaElHistorial() throws Exception {
+        long departamento=insertar("INSERT INTO departamentos(nombre) VALUES (?)","Departamento mensajes");
+        long tutor=insertar("INSERT INTO tutores(usuario_id,departamento_id) VALUES (?,?)",usuarioTutor,departamento);
+        long carrera=insertar("INSERT INTO carreras(departamento_id,clave,nombre) VALUES (?,?,?)",departamento,"MENSAJES-PRUEBA","Carrera mensajes");
+        long periodo=insertar("INSERT INTO periodos_academicos(clave,nombre,fecha_inicio,fecha_fin,estado) VALUES (?,?,?,?,?)","MENSAJES-PRUEBA","Periodo mensajes","2020-01-01","2031-12-31","activo");
+        long estudiante=insertar("INSERT INTO estudiantes(usuario_id,matricula) VALUES (?,?)",usuarioCarla,"MENSAJES-CARLA");
+        insertar("INSERT INTO situaciones_academicas(estudiante_id,periodo_id,carrera_id,semestre) VALUES (?,?,?,3)",estudiante,periodo,carrera);
+        long asignacion=insertar("INSERT INTO asignaciones_tutor(estudiante_id,tutor_id,periodo_id,asignado_por,inicio_en,estado) VALUES (?,?,?,?,?,'activa')",estudiante,tutor,periodo,usuarioTutor,"2026-01-01 12:00:00");
+        String acceso=token(usuarioCarla,"estudiante");
+        for(int repeticion=0;repeticion<2;repeticion++){
+            cliente.perform(get(rutaEstudiante()).header("Authorization",acceso)).andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(2));
+            conversaciones(autorizacionTutor).andExpect(status().isOk());
+        }
+        long menor=Math.min(usuarioCarla,usuarioTutor),mayor=Math.max(usuarioCarla,usuarioTutor);
+        assertThat(consultas.queryForObject("SELECT COUNT(*) FROM conversaciones WHERE usuario_menor_id=? AND usuario_mayor_id=?",Long.class,menor,mayor)).isEqualTo(1);
+        long conversacion=consultas.queryForObject("SELECT id FROM conversaciones WHERE usuario_menor_id=? AND usuario_mayor_id=?",Long.class,menor,mayor);
+        assertThat(consultas.queryForObject("SELECT COUNT(*) FROM conversacion_participantes WHERE conversacion_id=?",Long.class,conversacion)).isEqualTo(2);
+        consultas.update("UPDATE asignaciones_tutor SET estado='finalizada',fin_en='2026-10-01 12:00:00' WHERE id=?",asignacion);
+        cliente.perform(get(rutaEstudiante()+"/"+conversacion+"/mensajes").header("Authorization",acceso)).andExpect(status().isOk());
+    }
+
 }

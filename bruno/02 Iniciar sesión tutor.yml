@@ -1,0 +1,38 @@
+info:
+  name: "Iniciar sesión tutor"
+  type: "http"
+  seq: 2
+http:
+  method: "POST"
+  url: "https://situa.oaxacoders.tech/api/autenticacion/iniciar-sesion"
+  body:
+    type: "json"
+    data: |-
+      {
+        "correo": "tutor@demo.example",
+        "contrasena": "TutorDemo!2026"
+      }
+  auth: "inherit"
+runtime:
+  scripts:
+    - type: "after-response"
+      code: |-
+        if (res.status === 200) {
+          bru.setVar("token_tutor", res.body.token);
+          bru.setVar("usuario_tutor", res.body.usuario.id);
+        }
+    - type: "tests"
+      code: |-
+        test("Responde HTTP 200", function () {
+          expect(res.status).to.equal(200);
+        });
+        test("Entrega un JWT y datos del usuario", function () {
+          expect(res.body.token).to.be.a("string");
+          expect(res.body.usuario.roles).to.include("tutor");
+        });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

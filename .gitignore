@@ -71,3 +71,8 @@ Desktop.ini
 # Respaldos locales con datos y salidas de Maven de herramientas
 /database/backups/
 /database/target/
+
+__pycache__/
+*.py[cod]
+
+/.respaldo-local/

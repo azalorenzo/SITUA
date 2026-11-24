@@ -1,107 +1,19 @@
-import type { UsuarioSesion } from '../tipos/autenticacion';
 import { useState } from 'react';
-
-import { CompletarPerfilEstudiante } from './CompletarPerfilEstudiante';
+import type { UsuarioSesion } from '../tipos/autenticacion';
 import { StudentSidebar } from './StudentSidebar';
-
+import { BarraUsuario } from './BarraUsuario';
+import { CompletarPerfilEstudiante } from './CompletarPerfilEstudiante';
 import { StudentView } from './StudentView';
 import { StudentAgendaView } from './StudentAgendaView';
 import { StudentTutoriasView } from './StudentTutoriasView';
 import { StudentMessagesView } from './StudentMessagesView';
 import { StudentNotificationsView } from './StudentNotificationsView';
-
-export function StudentApp({ onLogout, usuario }: { onLogout: () => void; usuario: UsuarioSesion }) {
-
-  const [activeSection, setActiveSection] = useState('inicio');
-
-  const nombreEstudiante =
-    usuario.nombre;
-
-  return (
-
-    <div className="flex h-screen bg-[#F5F7FA] text-[#0B2828]">
-
-      <CompletarPerfilEstudiante alSalir={onLogout}/>
-      <StudentSidebar onLogout={onLogout} correoUsuario={usuario.correo} avatarUsuario={usuario.avatarUrl}
-        activeSection={activeSection}
-        onSectionChange={setActiveSection}
-        nombreEstudiante={nombreEstudiante || ""}
-      />
-
-      <main className="flex-1 overflow-auto">
-
-        {/* HEADER */}
-        {activeSection === "inicio" && (
-
-          <header className="bg-white shadow-sm sticky top-0 z-10">
-
-            <div className="px-8 py-4">
-
-              <div>
-
-                <h2 className="font-semibold text-2xl">
-
-                  ¡Hola {nombreEstudiante?.toUpperCase()}! 
-
-                </h2>
-
-              
-
-              </div>
-
-            </div>
-
-          </header>
-
-        )}
-
-        {/* CONTENT */}
-        <div className="p-8">
-
-          {activeSection === 'inicio' &&
-            <StudentView />
-          }
-
-          {activeSection === 'mi-agenda' &&
-            <StudentAgendaView />
-          }
-
-          {activeSection === 'mis-tutorias' &&
-            <StudentTutoriasView />
-          }
-
-          {activeSection === 'mensajes' &&
-            <StudentMessagesView />
-          }
-
-          {activeSection === 'avisos' &&
-            <StudentNotificationsView />
-          }
-
-          {activeSection !== 'inicio' &&
-           activeSection !== 'mi-agenda' &&
-           activeSection !== 'mis-tutorias' &&
-           activeSection !== 'mensajes' &&
-           activeSection !== 'avisos' && (
-
-            <div className="bg-white rounded-lg p-12 text-center shadow-sm">
-
-              <h3 className="font-semibold mb-2">
-                Sección en desarrollo
-              </h3>
-
-              <p className="text-[#53716E]">
-                Esta sección estará disponible próximamente
-              </p>
-
-            </div>
-
-          )}
-
-        </div>
-
-      </main>
-
-    </div>
-  );
+export function StudentApp({onLogout,usuario,cerrando=false}:{onLogout:()=>void;usuario:UsuarioSesion;cerrando?:boolean}){
+ const [seccion,cambiarSeccion]=useState('inicio'),[menuAbierto,cambiarMenu]=useState(false),[editarContacto,cambiarContacto]=useState(false);
+ return <div className="flex h-dvh bg-[#F5F7FA] text-[#0B2828]"><CompletarPerfilEstudiante alSalir={onLogout} editarContacto={editarContacto} alCerrar={()=>cambiarContacto(false)}/><StudentSidebar activeSection={seccion} onSectionChange={cambiarSeccion} abierto={menuAbierto} alCerrar={()=>cambiarMenu(false)}/>
+  <main className="flex-1 min-w-0 overflow-auto"><BarraUsuario usuario={usuario} rol="Estudiante" alEditarContacto={()=>cambiarContacto(true)} alCerrarSesion={onLogout} cerrando={cerrando} alAbrirMenu={()=>cambiarMenu(true)} menuAbierto={menuAbierto}/><div className="p-4 sm:p-8">{seccion==='inicio'&&<StudentView/>}
+{seccion==='mi-agenda'&&<StudentAgendaView/>}
+{seccion==='mis-tutorias'&&<StudentTutoriasView/>}
+{seccion==='mensajes'&&<StudentMessagesView/>}
+{seccion==='avisos'&&<StudentNotificationsView/>}</div></main></div>;
 }

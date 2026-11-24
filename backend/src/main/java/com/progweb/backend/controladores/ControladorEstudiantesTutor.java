@@ -24,6 +24,12 @@ public class ControladorEstudiantesTutor {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(servicio.consultar(token.getSubject(), busqueda, riesgo));
     }
 
+    @GetMapping("/pagina")
+    public ResponseEntity<com.progweb.backend.respuestas.PaginaEstudiantesTutor> pagina(@AuthenticationPrincipal Jwt token,
+            @jakarta.validation.Valid @ModelAttribute com.progweb.backend.solicitudes.FiltrosTutorados filtros){
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(servicio.consultarPagina(token.getSubject(),filtros));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<RespuestaDetalleEstudianteTutor> consultarDetalle(@PathVariable long id, @AuthenticationPrincipal Jwt token) {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(servicio.consultarDetalle(token.getSubject(), id));

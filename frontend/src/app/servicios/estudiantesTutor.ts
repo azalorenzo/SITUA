@@ -10,3 +10,7 @@ export function consultarEstudiantesTutor(comprobacion: AbortSignal, busqueda = 
 export function consultarDetalleEstudianteTutor(id: number, comprobacion: AbortSignal) {
   return solicitarApi<DetalleEstudianteTutor>(`/tutor/estudiantes/${id}`, { signal: comprobacion });
 }
+
+export function consultarPaginaEstudiantesTutor(comprobacion:AbortSignal,busqueda:string,riesgo:string,pagina:number){
+ return solicitarApi<import('../tipos/paginacion').Pagina<EstudianteTutor>>(`/tutor/estudiantes/pagina?${new URLSearchParams({busqueda,riesgo,pagina:String(pagina),tamano:'10'})}`,{signal:comprobacion});
+}

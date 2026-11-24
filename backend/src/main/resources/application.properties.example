@@ -27,3 +27,25 @@ seguridad.origenes-permitidos=${ORIGENES_PERMITIDOS:http://localhost:5173,http:/
 
 # Google se habilita cuando cada entorno tiene un ID de cliente válido.
 seguridad.google.cliente-id=${GOOGLE_CLIENTE_ID:}
+
+correo.habilitado=${CORREO_HABILITADO:false}
+correo.servidor=${CORREO_SERVIDOR:}
+correo.puerto=${CORREO_PUERTO:587}
+correo.usuario=${CORREO_USUARIO:}
+correo.contrasena=${CORREO_CONTRASENA:}
+correo.remitente=${CORREO_REMITENTE:}
+correo.ssl=${CORREO_SSL:false}
+
+correo.autenticacion=${CORREO_AUTENTICACION:true}
+correo.starttls=${CORREO_STARTTLS:true}
+
+mensajeria.sms-habilitado=${SMS_HABILITADO:false}
+mensajeria.whatsapp-habilitado=${WHATSAPP_HABILITADO:false}
+mensajeria.cuenta=${TWILIO_CUENTA:}
+mensajeria.clave=${TWILIO_CLAVE:}
+mensajeria.remitente-sms=${TWILIO_REMITENTE_SMS:}
+mensajeria.remitente-whatsapp=${TWILIO_REMITENTE_WHATSAPP:}
+mensajeria.plantilla-whatsapp=${TWILIO_PLANTILLA_WHATSAPP:}
+mensajeria.zona=${AVISOS_ZONA_HORARIA:America/Mexico_City}
+
+mensajeria.modo-whatsapp=${WHATSAPP_MODO:plantilla}

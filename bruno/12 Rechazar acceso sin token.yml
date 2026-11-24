@@ -1,0 +1,21 @@
+info:
+  name: "Rechazar acceso sin token"
+  type: "http"
+  seq: 12
+http:
+  method: "GET"
+  url: "https://situa.oaxacoders.tech/api/coordinacion/inicio"
+  auth: "inherit"
+runtime:
+  scripts:
+    - type: "tests"
+      code: |-
+        test("Responde HTTP 401", function () {
+          expect(res.status).to.equal(401);
+        });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

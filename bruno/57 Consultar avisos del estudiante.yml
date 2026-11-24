@@ -1,0 +1,29 @@
+info:
+  name: "Consultar avisos del estudiante"
+  type: "http"
+  seq: 57
+http:
+  method: "GET"
+  url: "https://situa.oaxacoders.tech/api/estudiante/avisos?pagina=1&tamano=5"
+  auth:
+    type: "bearer"
+    token: "{{token_estudiante}}"
+runtime:
+  scripts:
+    - type: "tests"
+      code: |-
+        test("Responde HTTP 200", function () {
+          expect(res.status).to.equal(200);
+        });
+        test("La página viene del servidor", function () {
+          expect(res.body.contenido).to.be.an("array");
+          expect(res.body.pagina).to.be.a("number");
+          expect(res.body.totalRegistros).to.be.a("number");
+          expect(res.body.totalPaginas).to.be.a("number");
+        });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

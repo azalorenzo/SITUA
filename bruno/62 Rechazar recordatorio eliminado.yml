@@ -1,0 +1,23 @@
+info:
+  name: "Rechazar recordatorio eliminado"
+  type: "http"
+  seq: 62
+http:
+  method: "DELETE"
+  url: "https://situa.oaxacoders.tech/api/estudiante/actividades/{{actividad_prueba}}"
+  auth:
+    type: "bearer"
+    token: "{{token_estudiante}}"
+runtime:
+  scripts:
+    - type: "tests"
+      code: |-
+        test("Responde HTTP 404", function () {
+          expect(res.status).to.equal(404);
+        });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

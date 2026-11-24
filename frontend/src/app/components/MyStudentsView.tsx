@@ -1,10 +1,12 @@
+import { PaginasSesiones } from './PaginasSesiones';
+import type { Pagina } from '../tipos/paginacion';
 import { RegistroSesionModal } from './RegistroSesionModal';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Search, Filter, Eye, Calendar, X, Clock, FileText, AlertCircle, TrendingUp, CheckCircle, Loader2 } from 'lucide-react';
 import { ErrorSolicitud } from '../servicios/autenticacion';
-import { consultarDetalleEstudianteTutor, consultarEstudiantesTutor } from '../servicios/estudiantesTutor';
+import { consultarDetalleEstudianteTutor, consultarPaginaEstudiantesTutor } from '../servicios/estudiantesTutor';
 import type { EstudianteTutor, ObservacionEstudianteTutor, SesionEstudianteTutor } from '../tipos/estudiantesTutor';
-import { EstadoConsulta, usarConsultaCoordinacion } from './ConsultaCoordinacion';
+import { EstadoConsulta } from './ConsultaCoordinacion';
 
 // Fecha de hoy en la zona del navegador, para que el día no cambie de noche por usar UTC.
 function fechaLocal(): string {
@@ -93,15 +95,18 @@ export function MyStudentsView() {
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [registerStudent, setRegisterStudent]     = useState<Student | null>(null);
   const [busquedaAplicada, cambiarBusquedaAplicada] = useState('');
+  const [pagina,cambiarPagina]=useState(1),[datosPagina,cambiarDatosPagina]=useState<Pagina<EstudianteTutor>|null>(null);
+  const [cargandoLista,cambiarCargaLista]=useState(true),[errorLista,cambiarErrorLista]=useState(''),[intentoLista,cambiarIntentoLista]=useState(0);
   useEffect(() => {
-    const espera = setTimeout(() => cambiarBusquedaAplicada(searchQuery), 300);
+    const espera = setTimeout(() => {cambiarBusquedaAplicada(searchQuery);cambiarPagina(1);}, 300);
     return () => clearTimeout(espera);
   }, [searchQuery]);
-  const consultarMisEstudiantes = useCallback(async (comprobacion: AbortSignal) => {
-    return (await consultarEstudiantesTutor(comprobacion, busquedaAplicada, filterStatus.toLowerCase())).map(aEstudiante);
-  }, [busquedaAplicada, filterStatus]);
-  const consulta = usarConsultaCoordinacion<Student>(consultarMisEstudiantes);
-  const students = consulta.datos;
+  useEffect(()=>{const cancelacion=new AbortController();cambiarCargaLista(true);cambiarErrorLista('');cambiarDatosPagina(null);
+    consultarPaginaEstudiantesTutor(cancelacion.signal,busquedaAplicada,filterStatus.toLowerCase(),pagina).then(datos=>{if(!cancelacion.signal.aborted)cambiarDatosPagina(datos);})
+      .catch(fallo=>{if(!cancelacion.signal.aborted)cambiarErrorLista(textoDeError(fallo));}).finally(()=>{if(!cancelacion.signal.aborted)cambiarCargaLista(false);});return()=>cancelacion.abort();
+  },[busquedaAplicada,filterStatus,pagina,intentoLista]);
+  const consulta={cargando:cargandoLista,error:errorLista,actualizar:()=>cambiarIntentoLista(actual=>actual+1)};
+  const students=(datosPagina?.contenido??[]).map(aEstudiante);
 
   // El periodo lo trae cada estudiante desde el catálogo; los dos modales nunca están abiertos a la vez.
   const periodo = (selectedStudent ?? registerStudent)?.periodo ?? '';
@@ -153,13 +158,13 @@ export function MyStudentsView() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
           <h2 className="font-semibold mb-1">Mis tutorados</h2>
           <p className="text-sm text-[#53716E]">Gestiona y da seguimiento a tus estudiantes</p>
         </div>
         <span className="text-sm text-[#53716E]">
-          Total: <span className="font-semibold">{students.length}</span> estudiantes
+          Total: <span className="font-semibold">{datosPagina?.totalRegistros??0}</span> estudiantes
         </span>
       </div>
 
@@ -172,7 +177,7 @@ export function MyStudentsView() {
             <Search className="w-5 h-5 text-[#53716E] absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="search"
-              aria-label="Buscar tutorado"
+              aria-label="Buscar tutorado" maxLength={200}
               maxLength={200}
               placeholder="Buscar por nombre o carrera..."
               value={searchQuery}
@@ -185,13 +190,15 @@ export function MyStudentsView() {
             <select
               aria-label="Riesgo académico"
               value={filterStatus}
-              onChange={e => setFilterStatus(e.target.value)}
+              onChange={evento => {setFilterStatus(evento.target.value);cambiarPagina(1);}}
               className="border border-[#DCE3EA] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1F6662]"
             >
               <option>Todos</option>
               <option>Alto</option>
               <option>Medio</option>
               <option>Bajo</option>
+              <option value="sin_riesgo">Sin riesgo</option>
+              <option value="sin_evaluar">Sin evaluar</option>
             </select>
           </div>
         </div>
@@ -270,6 +277,8 @@ export function MyStudentsView() {
           </div>
         )}
       </div>
+
+      {datosPagina&&!consulta.cargando&&!consulta.error&&<div className="flex flex-wrap items-center justify-between gap-3"><p className="text-sm text-[#53716E]">{datosPagina.totalRegistros} estudiantes</p><PaginasSesiones pagina={datosPagina.pagina} totalPaginas={datosPagina.totalPaginas} alCambiar={cambiarPagina}/></div>}
 
       {/* ── Modal Ver Detalle ─────────────────────────────────────────────────── */}
       {selectedStudent && (

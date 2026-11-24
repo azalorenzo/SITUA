@@ -22,8 +22,8 @@ public class ControladorMensajesTutor {
     public ControladorMensajesTutor(ServicioMensajesTutor servicio) { this.servicio = servicio; }
 
     @GetMapping
-    public ResponseEntity<List<RespuestaConversacionTutor>> conversaciones(@AuthenticationPrincipal Jwt token) {
-        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(servicio.conversaciones(token.getSubject()));
+    public ResponseEntity<List<RespuestaConversacionTutor>> conversaciones(@AuthenticationPrincipal Jwt token, @RequestParam(defaultValue="") String busqueda) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(servicio.conversaciones(token.getSubject(),true,busqueda));
     }
 
     @GetMapping("/{id}/mensajes")
@@ -32,8 +32,8 @@ public class ControladorMensajesTutor {
     }
 
     @PatchMapping("/{id}/leer")
-    public ResponseEntity<RespuestaConversacionLeida> marcarLeida(@PathVariable long id, @AuthenticationPrincipal Jwt token) {
-        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(servicio.marcarLeida(token.getSubject(), id));
+    public ResponseEntity<RespuestaConversacionLeida> marcarLeida(@PathVariable long id, @AuthenticationPrincipal Jwt token, @RequestParam(required=false) Long ultimoMensajeId) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(servicio.marcarLeida(token.getSubject(),true,id,ultimoMensajeId));
     }
 
     @PostMapping("/{id}/mensajes")

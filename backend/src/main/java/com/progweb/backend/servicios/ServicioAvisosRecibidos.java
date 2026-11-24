@@ -39,6 +39,11 @@ public class ServicioAvisosRecibidos {
         return avisos.listar(usuarioTutor(identificador), MAXIMO_AVISOS);
     }
 
+    public com.progweb.backend.respuestas.PaginaAvisosRecibidos consultarPagina(String identificador,com.progweb.backend.solicitudes.FiltrosAvisosRecibidos filtros){
+        long usuario=usuarioTutor(identificador),total=avisos.contarFiltrados(usuario,filtros);int paginas=Math.toIntExact((total+filtros.tamano()-1)/filtros.tamano());
+        int pagina=Math.min(filtros.pagina(),Math.max(1,paginas));return new com.progweb.backend.respuestas.PaginaAvisosRecibidos(avisos.listarPagina(usuario,filtros,pagina),pagina,filtros.tamano(),total,paginas,avisos.noLeidos(usuario),avisos.importantes(usuario));
+    }
+
     @Transactional
     public RespuestaAvisoRecibido marcarLeido(String identificador, long avisoId) {
         long usuario = usuarioTutor(identificador);

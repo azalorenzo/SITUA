@@ -1,8 +1,9 @@
+import { ConfirmarAccion } from './ConfirmarAccion';
 import { SesionesTutor } from './SesionesTutor';
 import { useEffect, useState } from 'react';
 import { Plus, Edit, Trash2, Clock, Calendar, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ErrorSolicitud } from '../servicios/autenticacion';
-import { consultarHorarios, crearHorario, editarHorario, eliminarHorario, aFechaHoraUtc, formatearFecha, formatearHora, ubicacionMostrada } from '../servicios/horarios';
+import { consultarHorarios, consultarResumenHorarios, crearHorario, editarHorario, eliminarHorario, aFechaHoraUtc, formatearFecha, formatearHora, ubicacionMostrada } from '../servicios/horarios';
 import type { Horario } from '../tipos/horarios';
 
 interface TimeSlot {
@@ -50,20 +51,6 @@ export function ScheduleView() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const comprobacion = new AbortController();
-    setCargando(true);
-    setError(null);
-    consultarHorarios(comprobacion.signal)
-      .then(horarios => setSchedules(horarios.map(horarioATimeSlot)))
-      .catch(motivo => {
-        if (comprobacion.signal.aborted) return;
-        setError(motivo instanceof ErrorSolicitud ? motivo.message : 'No se pudieron cargar tus horarios.');
-      })
-      .finally(() => { if (!comprobacion.signal.aborted) setCargando(false); });
-    return () => comprobacion.abort();
-  }, [intentoHorarios]);
-
   const [currentYear, setCurrentYear] =
     useState(today.getFullYear());
 
@@ -72,6 +59,21 @@ export function ScheduleView() {
 
   const [selectedDate, setSelectedDate] =
     useState(toYMD(today));
+
+  const [resumen,cambiarResumen]=useState({total:0,disponibles:0,ocupados:0,hoy:0}),[horariosDia,cambiarHorariosDia]=useState<TimeSlot[]>([]);
+  const [guardando,cambiarGuardado]=useState(false),[errorFormulario,cambiarErrorFormulario]=useState(''),[erroresFormulario,cambiarErroresFormulario]=useState<Record<string,string[]>>({});
+  const [aEliminar,cambiarAEliminar]=useState<number|null>(null),[errorEliminar,cambiarErrorEliminar]=useState('');
+  const hoy=toYMD(today),utc=(fecha:Date)=>fecha.toISOString().slice(0,19);
+  useEffect(()=>{const cancelacion=new AbortController();setCargando(true);setError(null);setSchedules([]);
+    const desde=utc(new Date(currentYear,currentMonth,1)),hasta=utc(new Date(currentYear,currentMonth+1,1));
+    const inicioHoy=new Date(hoy+'T00:00:00'),finHoy=new Date(inicioHoy);finHoy.setDate(finHoy.getDate()+1);
+    Promise.all([consultarHorarios(cancelacion.signal,desde,hasta),consultarResumenHorarios(cancelacion.signal,desde,hasta),consultarResumenHorarios(cancelacion.signal,utc(inicioHoy),utc(finHoy))])
+      .then(([horarios,delMes,delDia])=>{if(!cancelacion.signal.aborted){setSchedules(horarios.map(horarioATimeSlot));cambiarResumen({...delMes,hoy:delDia.total});}})
+      .catch(fallo=>{if(!cancelacion.signal.aborted)setError(fallo instanceof Error?fallo.message:'No se pudieron cargar tus horarios.');}).finally(()=>{if(!cancelacion.signal.aborted)setCargando(false);});return()=>cancelacion.abort();
+  },[currentYear,currentMonth,intentoHorarios,hoy]);
+  useEffect(()=>{const cancelacion=new AbortController();cambiarHorariosDia([]);const desde=new Date(selectedDate+'T00:00:00'),hasta=new Date(desde);hasta.setDate(hasta.getDate()+1);
+    consultarHorarios(cancelacion.signal,utc(desde),utc(hasta)).then(datos=>{if(!cancelacion.signal.aborted)cambiarHorariosDia(datos.map(horarioATimeSlot));}).catch(fallo=>{if(!cancelacion.signal.aborted)setError(fallo instanceof Error?fallo.message:'No se pudieron cargar tus horarios.');});return()=>cancelacion.abort();
+  },[selectedDate,intentoHorarios]);
 
   const [showAddModal, setShowAddModal] =
     useState(false);
@@ -95,14 +97,14 @@ export function ScheduleView() {
 
 
   // ── Navegación de mes ──────────────────────────────────────────────────────
-  const prevMonth = () => {
-    if (currentMonth === 0) { setCurrentMonth(11); setCurrentYear(y => y - 1); }
-    else setCurrentMonth(m => m - 1);
+  const cambiarMes = (desplazamiento: number) => {
+    const fecha = new Date(currentYear, currentMonth + desplazamiento, 1);
+    setCurrentMonth(fecha.getMonth());
+    setCurrentYear(fecha.getFullYear());
+    setSelectedDate(toYMD(fecha));
   };
-  const nextMonth = () => {
-    if (currentMonth === 11) { setCurrentMonth(0); setCurrentYear(y => y + 1); }
-    else setCurrentMonth(m => m + 1);
-  };
+  const prevMonth = () => cambiarMes(-1);
+  const nextMonth = () => cambiarMes(1);
 
   // ── Construir cuadrícula del mes ───────────────────────────────────────────
   const firstDay  = new Date(currentYear, currentMonth, 1).getDay();
@@ -118,64 +120,35 @@ export function ScheduleView() {
   const dateStr = (day: number) =>
     `${currentYear}-${String(currentMonth + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
 
-  const slotsForDate = (d: string) => schedules.filter(s => s.date === d);
+  const porFecha:Record<string,TimeSlot[]>={};
+  for(const horario of schedules)(porFecha[horario.date]??=[]).push(horario);
+  const slotsForDate=(fecha:string)=>porFecha[fecha]??[];
 
   // ── CRUD ──────────────────────────────────────────────────────────────────
   const mensajeError = (motivo: unknown, porDefecto: string) =>
     motivo instanceof ErrorSolicitud ? motivo.message : porDefecto;
 
-  const handleAdd = async () => {
-    if (!startTime || !endTime || !location) { alert('Completa todos los campos'); return; }
-    try {
-      const horario = await crearHorario({
-        inicioEn: aFechaHoraUtc(selectedDate, startTime),
-        finEn: aFechaHoraUtc(selectedDate, endTime),
-        ubicacion: location,
-      });
-      setSchedules(prev => [...prev, horarioATimeSlot(horario)]);
-      resetForm(); setShowAddModal(false);
-    } catch (motivo) {
-      alert(mensajeError(motivo, 'No se pudo agregar el horario.'));
-    }
-  };
-
-  const handleEdit = async () => {
-    if (!editingSlot || !startTime || !endTime || !location) { alert('Completa todos los campos'); return; }
-    try {
-      const horario = await editarHorario(editingSlot.id, {
-        inicioEn: aFechaHoraUtc(editingSlot.date, startTime),
-        finEn: aFechaHoraUtc(editingSlot.date, endTime),
-        ubicacion: location,
-      });
-      setSchedules(prev => prev.map(s => s.id === editingSlot.id ? horarioATimeSlot(horario) : s));
-      resetForm(); setEditingSlot(null);
-    } catch (motivo) {
-      alert(mensajeError(motivo, 'No se pudo guardar el cambio.'));
-    }
-  };
-
-  const handleDelete = async (id: number) => {
-    if (!confirm('¿Eliminar este horario?')) return;
-    try {
-      await eliminarHorario(id);
-      setSchedules(prev => prev.filter(s => s.id !== id));
-    } catch (motivo) {
-      alert(mensajeError(motivo, 'No se pudo eliminar el horario.'));
-    }
-  };
+  const validarFormulario=()=>{const errores:Record<string,string[]>={};if(!startTime)errores.inicioEn=['Selecciona la hora de inicio.'];if(!endTime)errores.finEn=['Selecciona la hora de fin.'];else if(startTime&&endTime<=startTime)errores.finEn=['La hora de fin debe ser posterior al inicio.'];if(!location.trim())errores.ubicacion=['Escribe la ubicación.'];cambiarErroresFormulario(errores);return Object.keys(errores).length===0;};
+  const guardarHorario=async()=>{if(guardando||!validarFormulario())return;cambiarGuardado(true);cambiarErrorFormulario('');try{
+    const datos={inicioEn:aFechaHoraUtc(editingSlot?.date??selectedDate,startTime),finEn:aFechaHoraUtc(editingSlot?.date??selectedDate,endTime),ubicacion:location.trim()};
+    if(editingSlot)await editarHorario(editingSlot.id,datos);else await crearHorario(datos);closeModal();cambiarIntentoHorarios(valor=>valor+1);
+   }catch(fallo){cambiarErrorFormulario(mensajeError(fallo,'No se pudo guardar el horario.'));if(fallo instanceof ErrorSolicitud)cambiarErroresFormulario(fallo.erroresPorCampo);}finally{cambiarGuardado(false);}};
+  const handleAdd=guardarHorario,handleEdit=guardarHorario;
+  const handleDelete=(id:number)=>{cambiarErrorEliminar('');cambiarAEliminar(id);};
+  const confirmarEliminacion=async()=>{if(aEliminar===null||guardando)return;cambiarGuardado(true);cambiarErrorEliminar('');try{await eliminarHorario(aEliminar);cambiarAEliminar(null);cambiarIntentoHorarios(valor=>valor+1);}catch(fallo){cambiarErrorEliminar(mensajeError(fallo,'No se pudo eliminar el horario.'));}finally{cambiarGuardado(false);}};
 
   const openEdit = (slot: TimeSlot) => {
-    setEditingSlot(slot);
+    cambiarErrorFormulario('');cambiarErroresFormulario({});setEditingSlot(slot);
     setStartTime(slot.startTime);
     setEndTime(slot.endTime);
     setLocation(slot.location);
   };
 
-  const resetForm = () => { setStartTime(''); setEndTime(''); setLocation(''); };
+  const resetForm = () => { setStartTime(''); setEndTime(''); setLocation('');cambiarErrorFormulario('');cambiarErroresFormulario({}); };
   const closeModal = () => { setShowAddModal(false); setEditingSlot(null); resetForm(); };
 
   // ── Día seleccionado ───────────────────────────────────────────────────────
-  const selectedSlots = slotsForDate(selectedDate).sort((a,b) => a.startTime.localeCompare(b.startTime));
+  const selectedSlots=horariosDia;
 
   const selectedDateObj = new Date(selectedDate + 'T00:00:00');
   const selectedLabel = `${selectedDateObj.getDate()} de ${MESES[selectedDateObj.getMonth()]} ${selectedDateObj.getFullYear()}`;
@@ -183,7 +156,7 @@ export function ScheduleView() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
           <h2 className="font-semibold mb-1">Mis horarios</h2>
           {cargando && <p className="text-xs text-[#53716E]">Cargando horarios…</p>}
@@ -196,10 +169,10 @@ export function ScheduleView() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Disponibles',   val: schedules.filter(s => s.type==='disponible').length, icon: <Clock className="w-5 h-5 text-[#227F78]"/>,  bg: 'bg-[#E4F3ED]' },
-          { label: 'Ocupados',      val: schedules.filter(s => s.type==='ocupado').length,    icon: <Calendar className="w-5 h-5 text-[#1F6662]"/>,  bg: 'bg-[#F2FBF9]' },
-          { label: 'Este mes',      val: schedules.filter(s => s.date.startsWith(`${currentYear}-${String(currentMonth+1).padStart(2,'0')}`)).length, icon: <Calendar className="w-5 h-5 text-[#6F548F]"/>, bg: 'bg-[#F2EDF8]' },
-          { label: 'Hoy',           val: slotsForDate(toYMD(today)).length,                   icon: <Clock className="w-5 h-5 text-[#986314]"/>,   bg: 'bg-[#FFF3D6]' },
+          { label: 'Disponibles',   val: resumen.disponibles, icon: <Clock className="w-5 h-5 text-[#227F78]"/>,  bg: 'bg-[#E4F3ED]' },
+          { label: 'Ocupados',      val: resumen.ocupados,    icon: <Calendar className="w-5 h-5 text-[#1F6662]"/>,  bg: 'bg-[#F2FBF9]' },
+          { label: 'Este mes',      val: resumen.total, icon: <Calendar className="w-5 h-5 text-[#6F548F]"/>, bg: 'bg-[#F2EDF8]' },
+          { label: 'Hoy',           val: resumen.hoy,                   icon: <Clock className="w-5 h-5 text-[#986314]"/>,   bg: 'bg-[#FFF3D6]' },
         ].map(({ label, val, icon, bg }) => (
           <div key={label} className="bg-white rounded-lg p-4 shadow-sm">
             <div className="flex items-center gap-3">
@@ -220,13 +193,13 @@ export function ScheduleView() {
         <div className="lg:col-span-2 bg-white rounded-lg shadow-sm overflow-hidden">
           {/* Month nav */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-[#DCE3EA]">
-            <button onClick={prevMonth} className="p-2 hover:bg-[#DCE3EA] rounded-lg">
+            <button aria-label="Mes anterior" onClick={prevMonth} className="p-2 hover:bg-[#DCE3EA] rounded-lg">
               <ChevronLeft className="w-5 h-5 text-[#53716E]" />
             </button>
             <h3 className="font-semibold text-[#0B2828]">
               {MESES[currentMonth]} {currentYear}
             </h3>
-            <button onClick={nextMonth} className="p-2 hover:bg-[#DCE3EA] rounded-lg">
+            <button aria-label="Mes siguiente" onClick={nextMonth} className="p-2 hover:bg-[#DCE3EA] rounded-lg">
               <ChevronRight className="w-5 h-5 text-[#53716E]" />
             </button>
           </div>
@@ -255,7 +228,7 @@ export function ScheduleView() {
               return (
                 <button
                   key={ds}
-                  onClick={() => setSelectedDate(ds)}
+                  aria-label={`Seleccionar ${ds}`} onClick={() => setSelectedDate(ds)}
                   className={`h-16 border-b border-r border-[#DCE3EA] last:border-r-0 flex flex-col items-center pt-2 gap-1 transition-colors
                     ${isSel  ? 'bg-[#1F6662] text-white'       : ''}
                     ${isToday && !isSel ? 'bg-[#F2FBF9] font-bold' : ''}
@@ -343,11 +316,11 @@ export function ScheduleView() {
                     </div>
                     <div className="flex gap-1 ml-2">
                       {slot.type === 'disponible' && (
-                        <button onClick={() => openEdit(slot)} className="p-1 hover:bg-white rounded">
+                        <button aria-label={`Editar horario ${slot.startTime}`} onClick={() => openEdit(slot)} className="p-1 hover:bg-white rounded">
                           <Edit className="w-3.5 h-3.5 text-[#53716E]" />
                         </button>
                       )}
-                      <button onClick={() => handleDelete(slot.id)} className="p-1 hover:bg-white rounded">
+                      <button aria-label={`Eliminar horario ${slot.startTime}`} onClick={() => handleDelete(slot.id)} className="p-1 hover:bg-white rounded">
                         <Trash2 className="w-3.5 h-3.5 text-[#B83F4B]" />
                       </button>
                     </div>
@@ -367,13 +340,13 @@ export function ScheduleView() {
       {/* Modal agregar / editar */}
       {(showAddModal || editingSlot) && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
+          <div role="dialog" aria-modal="true" aria-label={editingSlot?'Editar horario':'Agregar disponibilidad'} className="bg-white rounded-lg max-w-md w-full p-6 max-h-[90dvh] overflow-y-auto">
             <div className="flex justify-between items-center mb-5">
               <div>
                 <h3 className="font-semibold">{editingSlot ? 'Editar horario' : 'Agregar disponibilidad'}</h3>
                 <p className="text-xs text-[#53716E] mt-0.5">{selectedLabel}</p>
               </div>
-              <button onClick={closeModal} className="text-[#53716E] hover:text-[#53716E]">
+              <button disabled={guardando} onClick={closeModal} className="text-[#53716E] hover:text-[#53716E]">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -381,8 +354,8 @@ export function ScheduleView() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-[#0B2828] mb-1">Hora inicio</label>
-                  <select
+                  <label htmlFor="horario-inicio" className="block text-sm font-medium text-[#0B2828] mb-1">Hora inicio</label>
+                  <select id="horario-inicio" disabled={guardando}
                     value={startTime}
                     onChange={e => setStartTime(e.target.value)}
                     className="w-full border border-[#DCE3EA] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1F6662]"
@@ -390,46 +363,48 @@ export function ScheduleView() {
                     <option value="">Seleccionar</option>
                     {timeSlots.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
+                  {erroresFormulario.inicioEn?.map(texto=><p key={texto} className="text-sm text-[#B83F4B]">{texto}</p>)}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#0B2828] mb-1">Hora fin</label>
-                  <select
+                  <label htmlFor="horario-fin" className="block text-sm font-medium text-[#0B2828] mb-1">Hora fin</label>
+                  <select id="horario-fin" disabled={guardando}
                     value={endTime}
                     onChange={e => setEndTime(e.target.value)}
                     className="w-full border border-[#DCE3EA] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1F6662]"
                   >
                     <option value="">Seleccionar</option>
                     {timeSlots.map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
+                  </select>{erroresFormulario.finEn?.map(texto=><p key={texto} className="text-sm text-[#B83F4B]">{texto}</p>)}
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[#0B2828] mb-1">Ubicación</label>
+                <label htmlFor="horario-ubicacion" className="block text-sm font-medium text-[#0B2828] mb-1">Ubicación</label>
                 <input
-                  type="text"
+                  type="text" id="horario-ubicacion" disabled={guardando} maxLength={1024}
                   value={location}
                   onChange={e => setLocation(e.target.value)}
                   placeholder="Ej: Aula 301, Virtual..."
                   className="w-full border border-[#DCE3EA] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1F6662]"
-                />
+                />{erroresFormulario.ubicacion?.map(texto=><p key={texto} className="text-sm text-[#B83F4B]">{texto}</p>)}
               </div>
             </div>
 
-            <div className="flex gap-3 mt-6">
-              <button onClick={closeModal} className="flex-1 px-4 py-2 border border-[#DCE3EA] text-[#0B2828] rounded-lg hover:bg-[#F5F7FA]">
+            {errorFormulario&&<p role="alert" className="text-sm text-[#B83F4B] mt-4">{errorFormulario}</p>}<div className="flex gap-3 mt-6">
+              <button disabled={guardando} onClick={closeModal} className="flex-1 px-4 py-2 border border-[#DCE3EA] text-[#0B2828] rounded-lg hover:bg-[#F5F7FA]">
                 Cancelar
               </button>
               <button
-                onClick={editingSlot ? handleEdit : handleAdd}
+                disabled={guardando} onClick={editingSlot ? handleEdit : handleAdd}
                 className="flex-1 px-4 py-2 bg-[#1F6662] text-white rounded-lg hover:bg-[#1C4543]"
               >
-                {editingSlot ? 'Guardar cambios' : 'Agregar horario'}
+                {guardando?'Guardando…':editingSlot?'Guardar cambios':'Agregar horario'}
               </button>
             </div>
           </div>
         </div>
       )}
+      {aEliminar!==null&&<ConfirmarAccion titulo="¿Eliminar este horario?" confirmacion="Eliminar" pendiente={guardando} error={errorEliminar} alCerrar={()=>cambiarAEliminar(null)} alConfirmar={confirmarEliminacion}/>}
     </div>
   );
 }

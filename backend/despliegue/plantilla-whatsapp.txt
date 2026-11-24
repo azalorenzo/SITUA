@@ -1,0 +1,14 @@
+Nombre sugerido: confirmacion_tutoria
+Idioma: español (México)
+Categoría: utilidad
+
+Tu tutoría con {{1}} está confirmada para el {{2}} a las {{3}}, hora de Ciudad de México. Ubicación: {{4}}.
+
+Variables:
+1: nombre del tutor
+2: fecha en formato dd/MM/yyyy
+3: hora en formato HH:mm
+4: ubicación o enlace de la sesión
+
+Después de aprobar la plantilla, copia su Content SID (HX...) en TWILIO_PLANTILLA_WHATSAPP y utiliza WHATSAPP_MODO=plantilla.
+La zona del texto debe coincidir con AVISOS_ZONA_HORARIA.

@@ -1,0 +1,30 @@
+info:
+  name: "Filtrar tutorados desde backend"
+  type: "http"
+  seq: 36
+http:
+  method: "GET"
+  url: "https://situa.oaxacoders.tech/api/tutor/estudiantes/pagina?pagina=1&tamano=5&riesgo=alto&busqueda=INEXISTENTE_{{marca}}"
+  auth:
+    type: "bearer"
+    token: "{{token_tutor}}"
+runtime:
+  scripts:
+    - type: "tests"
+      code: |-
+        test("Responde HTTP 200", function () {
+          expect(res.status).to.equal(200);
+        });
+        test("La página viene del servidor", function () {
+          expect(res.body.contenido).to.be.an("array");
+          expect(res.body.pagina).to.be.a("number");
+          expect(res.body.totalRegistros).to.be.a("number");
+          expect(res.body.totalPaginas).to.be.a("number");
+        });
+        test("El filtro se aplica en el servidor", function () { expect(res.body.totalRegistros).to.equal(0); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

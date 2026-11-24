@@ -1,0 +1,28 @@
+info:
+  name: "Rechazar contraseña incorrecta"
+  type: "http"
+  seq: 10
+http:
+  method: "POST"
+  url: "https://situa.oaxacoders.tech/api/autenticacion/iniciar-sesion"
+  body:
+    type: "json"
+    data: |-
+      {
+        "correo": "estudiante@demo.example",
+        "contrasena": "Incorrecta!2026"
+      }
+  auth: "inherit"
+runtime:
+  scripts:
+    - type: "tests"
+      code: |-
+        test("Responde HTTP 401", function () {
+          expect(res.status).to.equal(401);
+        });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

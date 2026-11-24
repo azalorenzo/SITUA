@@ -272,4 +272,23 @@ class EstudiantesTutorPruebas {
                 .andExpect(status().isUnprocessableContent());
     }
 
+    @Test void paginaLosTutoradosDesdeElServidor() throws Exception {
+        cliente.perform(get("/api/tutor/estudiantes/pagina").param("tamano","1").header("Authorization",autorizacionTutor))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.totalRegistros").value(2)).andExpect(jsonPath("$.totalPaginas").value(2))
+                .andExpect(jsonPath("$.contenido.length()").value(1)).andExpect(jsonPath("$.contenido[0].id").value(ana));
+        cliente.perform(get("/api/tutor/estudiantes/pagina").param("tamano","1").param("pagina","999").header("Authorization",autorizacionTutor))
+                .andExpect(jsonPath("$.pagina").value(2)).andExpect(jsonPath("$.contenido[0].id").value(beto));
+    }
+    @Test void combinaFiltrosConLaPaginacionYRespetaElTutor() throws Exception {
+        cliente.perform(get("/api/tutor/estudiantes/pagina").param("busqueda","Ana").param("riesgo","medio").header("Authorization",autorizacionTutor))
+                .andExpect(jsonPath("$.totalRegistros").value(1)).andExpect(jsonPath("$.contenido[0].id").value(ana));
+        cliente.perform(get("/api/tutor/estudiantes/pagina").param("busqueda","Ana").header("Authorization",autorizacionOtroTutor))
+                .andExpect(jsonPath("$.totalRegistros").value(0)).andExpect(jsonPath("$.contenido.length()").value(0));
+    }
+    @Test void validaParametrosYPersistenLosPermisosEnLaPagina() throws Exception {
+        for(String parametro:List.of("pagina=0","tamano=101","riesgo=inventado"))cliente.perform(get("/api/tutor/estudiantes/pagina?"+parametro).header("Authorization",autorizacionTutor)).andExpect(status().isUnprocessableContent());
+        cliente.perform(get("/api/tutor/estudiantes/pagina")).andExpect(status().isUnauthorized());
+        cliente.perform(get("/api/tutor/estudiantes/pagina").header("Authorization",autorizacionEstudiante)).andExpect(status().isForbidden());
+    }
+
 }

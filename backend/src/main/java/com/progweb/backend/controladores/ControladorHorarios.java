@@ -30,9 +30,15 @@ public class ControladorHorarios {
     }
 
     @GetMapping("/horarios")
-    public ResponseEntity<List<RespuestaHorario>> listar(@AuthenticationPrincipal Jwt token) {
+    public ResponseEntity<List<RespuestaHorario>> listar(@AuthenticationPrincipal Jwt token,@Valid @org.springframework.web.bind.annotation.ModelAttribute com.progweb.backend.solicitudes.FiltrosHorarios filtros) {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore())
-                .body(servicio.listarPropios(token.getSubject()));
+                .body(servicio.listarPropios(token.getSubject(),filtros));
+    }
+
+    @GetMapping("/horarios/resumen")
+    public ResponseEntity<com.progweb.backend.respuestas.ResumenHorarios> resumen(@AuthenticationPrincipal Jwt token,
+            @Valid @org.springframework.web.bind.annotation.ModelAttribute com.progweb.backend.solicitudes.FiltrosHorarios filtros){
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(servicio.resumen(token.getSubject(),filtros));
     }
 
     @PostMapping("/horarios")

@@ -13,3 +13,5 @@ export function marcarAvisoLeido(id: number) {
 export function marcarAvisosLeidos() {
   return solicitarApi<AvisosMarcados>('/tutor/avisos/leer-todos', { method: 'PATCH' });
 }
+
+export function consultarPaginaAvisosTutor(comprobacion:AbortSignal,pagina:number,busqueda:string,lectura:string,prioridad:string){return solicitarApi<import('../tipos/avisosRecibidos').PaginaAvisosTutor>(`/tutor/avisos/pagina?${new URLSearchParams({pagina:String(pagina),tamano:'5',busqueda,lectura,prioridad})}`,{signal:comprobacion});}

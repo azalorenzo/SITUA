@@ -16,17 +16,18 @@ public class EnvioCodigoSmtp implements EnvioCodigoRecuperacion {
     public EnvioCodigoSmtp(@Value("${correo.habilitado:false}") boolean activo,
             @Value("${correo.servidor:}") String servidor,@Value("${correo.puerto:587}") int puerto,
             @Value("${correo.usuario:}") String usuario,@Value("${correo.contrasena:}") String contrasena,
-            @Value("${correo.remitente:}") String remitente,@Value("${correo.ssl:false}") boolean ssl) {
+            @Value("${correo.remitente:}") String remitente,@Value("${correo.ssl:false}") boolean ssl,
+            @Value("${correo.autenticacion:true}") boolean autenticacion,@Value("${correo.starttls:true}") boolean starttls) {
         this.remitente=remitente;this.activo=activo;
-        if(activo&&(servidor.isBlank()||usuario.isBlank()||contrasena.isBlank()||remitente.isBlank()||puerto<1||puerto>65535))
+        if(activo&&(servidor.isBlank()||autenticacion&&(usuario.isBlank()||contrasena.isBlank())||remitente.isBlank()||puerto<1||puerto>65535))
             throw new IllegalArgumentException("Completa los datos SMTP antes de habilitar el correo.");
         correo.setHost(servidor);correo.setPort(puerto);correo.setUsername(usuario);correo.setPassword(contrasena);
         correo.setDefaultEncoding("UTF-8");
         var opciones=correo.getJavaMailProperties();
-        opciones.setProperty("mail.smtp.auth","true");
+        opciones.setProperty("mail.smtp.auth",String.valueOf(autenticacion));
         opciones.setProperty("mail.smtp.ssl.enable",String.valueOf(ssl));
-        opciones.setProperty("mail.smtp.starttls.enable",String.valueOf(!ssl));
-        opciones.setProperty("mail.smtp.starttls.required",String.valueOf(!ssl));
+        opciones.setProperty("mail.smtp.starttls.enable",String.valueOf(starttls&&!ssl));
+        opciones.setProperty("mail.smtp.starttls.required",String.valueOf(starttls&&!ssl));
         opciones.setProperty("mail.smtp.ssl.checkserveridentity","true");
         opciones.setProperty("mail.smtp.connectiontimeout","5000");
         opciones.setProperty("mail.smtp.timeout","5000");

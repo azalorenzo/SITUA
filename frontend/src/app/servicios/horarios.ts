@@ -1,8 +1,8 @@
 import { solicitarApi } from './autenticacion';
 import type { Horario, DatosHorario } from '../tipos/horarios';
 
-export function consultarHorarios(comprobacion: AbortSignal) {
-  return solicitarApi<Horario[]>('/tutor/horarios', { signal: comprobacion });
+export function consultarHorarios(comprobacion: AbortSignal,desde?:string,hasta?:string) {
+  return solicitarApi<Horario[]>(`/tutor/horarios${desde&&hasta?'?'+new URLSearchParams({desde,hasta}):''}`, { signal: comprobacion });
 }
 
 export function crearHorario(datos: DatosHorario) {
@@ -45,3 +45,6 @@ export function formatearHora(utcSinZona: string): string {
 export function ubicacionMostrada(horario: Horario): string {
   return horario.modalidad === 'virtual' ? (horario.enlaceVirtual || '') : (horario.ubicacion || '');
 }
+
+export interface ResumenHorarios {total:number;disponibles:number;ocupados:number;bloqueados:number;}
+export function consultarResumenHorarios(comprobacion:AbortSignal,desde:string,hasta:string){return solicitarApi<ResumenHorarios>(`/tutor/horarios/resumen?${new URLSearchParams({desde,hasta})}`,{signal:comprobacion});}

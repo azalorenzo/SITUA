@@ -25,4 +25,3 @@ export const mockSessions = [
 ];
 export const mockDashboard = { totalEstudiantes: 523, tutoresActivos: 38 };
 export const mockDashboardStats = { pendientes: 38, motivos: [{ motivo: 'Bajo rendimiento', total: 18 }, { motivo: 'Ausentismo', total: 12 }, { motivo: 'Seguimiento', total: 8 }], mensual: Array.from({ length: 12 }, (_, i) => ({ mes: i + 1, total: 20 + i * 4 })) };
-export function showMockAction() { window.alert('Vista de demostración: esta acción no genera archivos ni envía información.'); }

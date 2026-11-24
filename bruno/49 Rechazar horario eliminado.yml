@@ -1,0 +1,23 @@
+info:
+  name: "Rechazar horario eliminado"
+  type: "http"
+  seq: 49
+http:
+  method: "DELETE"
+  url: "https://situa.oaxacoders.tech/api/tutor/horarios/{{horario_prueba}}"
+  auth:
+    type: "bearer"
+    token: "{{token_tutor}}"
+runtime:
+  scripts:
+    - type: "tests"
+      code: |-
+        test("Responde HTTP 404", function () {
+          expect(res.status).to.equal(404);
+        });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

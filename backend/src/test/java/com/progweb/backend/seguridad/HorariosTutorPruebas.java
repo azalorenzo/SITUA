@@ -227,4 +227,22 @@ class HorariosTutorPruebas {
         consultar(autorizacionCoordinador).andExpect(status().isForbidden());
         crear(autorizacionCoordinador, datos("10:00", "11:00")).andExpect(status().isForbidden());
     }
+    @Test void filtraElIntervaloSinIncluirHorariosDeOtroTutor() throws Exception {
+        long primero=crearCorrecto("09:00","10:00");crearCorrecto("11:00","12:00");
+        cliente.perform(get("/api/tutor/horarios").param("desde","2031-03-10T09:30:00").param("hasta","2031-03-10T10:30:00").header("Authorization",autorizacionTutor))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(1)).andExpect(jsonPath("$[0].id").value(primero));
+        cliente.perform(get("/api/tutor/horarios").param("desde","2031-03-10T09:30:00").param("hasta","2031-03-10T10:30:00").header("Authorization",autorizacionOtroTutor))
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+    @Test void elResumenCuentaSoloElIntervaloDelTutor() throws Exception {
+        long primero=crearCorrecto("09:00","10:00");crearCorrecto("11:00","12:00");reservar(primero,"confirmada");
+        cliente.perform(get("/api/tutor/horarios/resumen").param("desde","2031-03-10T08:00:00").param("hasta","2031-03-10T13:00:00").header("Authorization",autorizacionTutor))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.total").value(2)).andExpect(jsonPath("$.ocupados").value(1)).andExpect(jsonPath("$.disponibles").value(1));
+        cliente.perform(get("/api/tutor/horarios/resumen").header("Authorization",autorizacionOtroTutor)).andExpect(jsonPath("$.total").value(0));
+    }
+    @Test void rechazaFechasIncompletasInvertidasOExcesivas() throws Exception {
+        for(String parametros:List.of("desde=2031-03-10T00:00:00","desde=2031-03-11T00:00:00&hasta=2031-03-10T00:00:00","desde=2031-01-01T00:00:00&hasta=2031-04-01T00:00:00"))
+            cliente.perform(get("/api/tutor/horarios?"+parametros).header("Authorization",autorizacionTutor)).andExpect(status().isUnprocessableContent());
+    }
+
 }

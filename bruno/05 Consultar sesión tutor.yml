@@ -1,0 +1,26 @@
+info:
+  name: "Consultar sesión tutor"
+  type: "http"
+  seq: 5
+http:
+  method: "GET"
+  url: "https://situa.oaxacoders.tech/api/autenticacion/sesion"
+  auth:
+    type: "bearer"
+    token: "{{token_tutor}}"
+runtime:
+  scripts:
+    - type: "tests"
+      code: |-
+        test("Responde HTTP 200", function () {
+          expect(res.status).to.equal(200);
+        });
+        test("La sesión pertenece al usuario conectado", function () {
+          expect(res.body.id).to.equal(bru.getVar("usuario_tutor"));
+        });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

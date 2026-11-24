@@ -31,6 +31,8 @@ class ConsultasCoordinacionPruebas {
     @Autowired FilterChainProxy filtro;
     @Autowired ServicioTokens tokens;
     @Autowired RepositorioUsuarios usuarios;
+    @Autowired com.progweb.backend.repositorios.RepositorioRoles roles;
+    final java.util.Map<String,Long> cuentas=new java.util.HashMap<>();
     @Autowired RepositorioConsultasCoordinacion repositorio;
     @Autowired JdbcTemplate consultas;
     @Autowired ServicioConsultasCoordinacion servicio;
@@ -41,7 +43,9 @@ class ConsultasCoordinacionPruebas {
     }
 
     String token(String rol) {
-        return tokens.crearToken(new RespuestaUsuario(1L, "Prueba", "prueba@example.invalid", null, List.of(rol))).token();
+        long id=cuentas.computeIfAbsent(rol,codigo->{var cuenta=new Usuario("Prueba de acceso","consulta-acceso-"+codigo+"@example.invalid",null);
+            cuenta.asignarRol(roles.buscarPorCodigo(codigo).orElseThrow());return usuarios.saveAndFlush(cuenta).obtenerId();});
+        return tokens.crearToken(new RespuestaUsuario(id, "Prueba", "prueba@example.invalid", null, List.of(rol))).token();
     }
 
     long insertar(String sentencia, Object... datos) {

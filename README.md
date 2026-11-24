@@ -1,353 +1,73 @@
-# Sistema de tutorías
+# SITUA — Sistema de tutorías
 
-Proyecto con frontend React/Vite, backend Spring Boot (Java) y MySQL. El inicio de sesión por correo y contraseña ya conecta React con Spring Boot y MySQL mediante JWT. Las listas de tutores y estudiantes y la administración de tutores, asignaciones y avisos de coordinación también utilizan MySQL. Reportes también consulta MySQL y genera sus PDF en el backend. Las demás pantallas conservan por ahora sus datos de demostración; no hay envío real de comunicaciones.
+Aplicación web para gestionar tutorías académicas entre estudiantes, tutores y coordinación. Centraliza la asignación de tutores, disponibilidad, solicitudes de sesiones, seguimiento académico, reportes, avisos y mensajes.
 
-## Inicio de sesión conectado
+**Aplicación:** [situa.oaxacoders.tech](https://situa.oaxacoders.tech/)
 
-El formulario de React está conectado al backend. El registro crea cuentas de estudiante y abre su sesión. El acceso con Google ya funciona en el entorno local configurado. En nuevas instalaciones se activa al configurar el ID de cliente y autorizar los orígenes en Google Cloud. La recuperación de contraseña sigue pendiente.
+**API:** `https://situa.oaxacoders.tech/api`
 
-### Configuración y arranque
+**Repositorio:** [github.com/azalorenzo/SITUA](https://github.com/azalorenzo/SITUA)
 
-En `backend/.env` se mantienen las variables de MySQL y se agregan:
+## Equipo
 
-- `JWT_CLAVE`: clave aleatoria en Base64 con al menos 32 bytes. No compartirla con el frontend ni subirla a Git. Cada instalación usa la suya.
-- `JWT_MINUTOS_VIGENCIA`: 15 por defecto; admite entre 1 y 1440 minutos.
-- `ORIGENES_PERMITIDOS`: por defecto `http://localhost:5173,http://127.0.0.1:5173`.
+**Número de equipo:** Por completar.
 
-Para generar una clave en otra computadora:
+| Integrante | Nombre completo |
+| --- | --- |
+| Integrante 1 | Por completar |
+| Integrante 2 | Por completar |
 
-```powershell
-node -e "console.log(require('node:crypto').randomBytes(32).toString('base64'))"
+## Diseño y organización
+
+| Recurso | Enlace |
+| --- | --- |
+| Prototipo navegable en Figma | Por completar |
+| Tablero público de GitHub Projects | Por completar |
+
+## Funcionalidades
+
+| Rol | Funciones |
+| --- | --- |
+| Coordinación | Resumen general, administración de tutores, asignaciones y avisos, consulta de estudiantes, reportes y exportación PDF. |
+| Tutor | Consulta de tutorados y expedientes, disponibilidad, confirmación o rechazo de solicitudes, registro de tutorías, seguimiento, reportes, avisos y mensajes. |
+| Estudiante | Registro, perfil académico y datos de contacto, elección de tutor, agenda, solicitudes de tutoría, actividades personales, avisos y mensajes con su tutor. |
+
+El acceso utiliza JWT y permisos por rol. Los listados paginados y filtros se resuelven en el backend. Las lecturas de avisos y mensajes se guardan por usuario.
+
+## Tecnologías
+
+| Área | Tecnologías |
+| --- | --- |
+| Frontend | React 18, TypeScript, Vite 6 y Tailwind CSS 4. |
+| Backend | Java 25, Spring Boot 4.1.2, Spring Security, Bean Validation y JPA/JDBC. |
+| Base de datos | MySQL y migraciones Flyway. |
+| Autenticación | JWT, BCrypt y Google Identity Services. |
+| Correo | JavaMailSender con Brevo SMTP y STARTTLS. |
+| Reportes | Apache PDFBox. |
+| Pruebas de API | Bruno, formato OpenCollection YAML. |
+| Despliegue | VPS Debian, Nginx, systemd y HTTPS con Let's Encrypt. |
+
+## Estructura del proyecto
+
+```text
+backend/       API Spring Boot, configuración y migraciones
+frontend/      Aplicación React
+bruno/         Colección de pruebas de la API publicada
+database/      Datos de prueba, respaldos y herramientas de base de datos
 ```
 
-Copiar el resultado solo al valor `JWT_CLAVE` del `.env` local. La clave de esta instalación ya fue generada sin mostrarla. `application.properties` contiene referencias a las variables, no valores secretos.
+## Instalación local
 
-Levantar el backend desde `backend`:
+### Requisitos
 
-```powershell
-.\mvnw.cmd spring-boot:run
-```
+- Java JDK 25.
+- Node.js 22 o superior y npm.
+- MySQL; el despliegue utiliza MySQL Community Server 8.4.13.
+- Acceso a internet para descargar las dependencias del Maven Wrapper y npm.
 
-Levantar React desde `frontend`, en otra terminal:
+### Base de datos
 
-```powershell
-npm install
-Copy-Item .env.example .env
-npm run dev
-```
-
-No reemplazar un `.env` local ya configurado. `VITE_URL_API=/api` utiliza el proxy de Vite hacia `http://127.0.0.1:8080`. En producción, el servidor web deberá redirigir `/api` al backend o habrá que ajustar la URL pública y los orígenes permitidos. Ninguna clave privada pertenece a una variable `VITE_`.
-
-### API de autenticación
-
-| Método | Ruta | Acceso | Resultado |
-|---|---|---|---|
-| POST | `/api/autenticacion/iniciar-sesion` | Público | JWT, vencimiento y perfil básico |
-| POST | `/api/autenticacion/registrar` | Público | Crea estudiante, devuelve JWT y perfil (201) |
-| POST | `/api/autenticacion/google` | Público | Verifica Google, vincula o crea cuenta y devuelve JWT |
-| GET | `/api/autenticacion/sesion` | `Authorization: Bearer <token>` | Perfil de la cuenta actual, comprobado en MySQL |
-
-Cuerpo del login, usando una cuenta del seed:
-
-```json
-{"correo":"estudiante@demo.example","contrasena":"AlumnoDemo!2026"}
-```
-
-La validación exige un correo válido y contraseña con mínimo 8 caracteres, una mayúscula, un número y un carácter especial. Se respeta el límite de BCrypt; React también señala contraseñas demasiado largas. El backend compara el hash, revisa que la cuenta esté activa y tenga roles, y devuelve un DTO sin contraseña ni hash. Un correo inexistente y una contraseña incorrecta generan el mismo mensaje.
-
-El JWT se firma con HS256 e incluye identificador de usuario, roles, emisor, audiencia, identificador único, emisión y vencimiento. Spring Security comprueba firma, emisor, audiencia y caducidad. Las rutas de coordinación se reservan a coordinación; las de tutor y estudiante permiten su rol y coordinación. Coordinación tiene consultas de tutores y estudiantes y administración de tutores, asignaciones y avisos. La consulta de sesión además comprueba el estado actual del usuario en MySQL.
-
-React abre la pantalla de coordinación, tutor o estudiante según los roles devueltos por el servidor; si hay varios, prioriza coordinación y después tutor. Muestra el nombre y correo auténticos, bloquea el botón durante la solicitud y presenta errores debajo de los campos o un mensaje general ante fallos de acceso/red. Las peticiones protegidas usan `Authorization`.
-
-Sin marcar recordar se usa `sessionStorage`; al marcarlo se usa `localStorage`. Solo se guardan token y vencimiento, nunca la contraseña ni roles usados como fuente de permisos. Al recargar se verifica la sesión con el servidor antes de mostrar las pantallas. Recordar no amplía la duración del JWT. Al vencer, se vuelve al login.
-
-**Alcance de Salir:** por ahora elimina la sesión del navegador. El JWT emitido sigue siendo válido hasta vencer; la invalidación en el servidor mediante `tokens_revocados` corresponde al siguiente avance de logout. No se presenta esa función como ya implementada.
-
-### Registro de cuentas
-
-Las indicaciones del proyecto piden registro, validación en frontend/backend y contraseñas protegidas con BCrypt. Google es una función adicional solicitada para este avance.
-
-El enlace **Regístrate** solicita nombre, matrícula, correo, contraseña y confirmación. El servidor siempre asigna `estudiante`; enviar otros roles no concede permisos. Correo y matrícula deben ser únicos. Usuario, rol y perfil se guardan juntos: si algo falla, no queda una cuenta a medias. Tras registrarse, se abre la sesión sin marcar recordar.
-
-```json
-{"nombre":"Estudiante nuevo","matricula":"ALUMNO-100","correo":"nuevo@example.com","contrasena":"MiClave!123","confirmarContrasena":"MiClave!123"}
-```
-
-### Acceso con Google
-
-La integración usa Google Identity Services y un ID de cliente OAuth de tipo **Aplicación web**. No necesita secreto de cliente para este flujo. Crear el cliente siguiendo la [guía oficial de Google](https://developers.google.com/identity/gsi/web/guides/get-google-api-clientid) y autorizar como orígenes JavaScript `http://localhost:5173` y `http://127.0.0.1:5173`. Para despliegue, agregar el origen HTTPS real.
-
-Colocar el mismo ID público en ambas variables y reiniciar los dos proyectos:
-
-```dotenv
-# backend/.env
-GOOGLE_CLIENTE_ID=
-# frontend/.env
-VITE_GOOGLE_CLIENTE_ID=
-```
-
-Al estar vacías, el frontend muestra Google desactivado y la API devuelve 503 si se intenta utilizarlo. No se colocaron credenciales inventadas. Cuando se configuren, aparecerá el botón oficial de Google.
-
-El frontend manda `credencial` y `comprobacion` a `/api/autenticacion/google`. El backend verifica la firma RS256 con las claves públicas de Google, emisor, audiencia, vencimiento, correo verificado y la comprobación del acceso. Guarda el identificador estable de Google (`sub`), no su token.
-
-- Cuenta nueva: el formulario pide matrícula y crea un estudiante. La contraseña local queda en NULL; esa cuenta ingresa con Google.
-- Correo ya registrado: pide la contraseña actual del sistema antes de vincular. Conserva sus roles. Las siguientes entradas usan la identidad vinculada.
-- Cuenta inactiva: el acceso se rechaza aunque Google sea válido.
-
-Las pruebas verifican firmas RSA y los casos de creación/vinculación con datos controlados. El usuario confirmó el acceso correcto con una cuenta real de Google en el entorno local.
-
-V3 agrega `identidades_externas` y permite `usuarios.password_hash` nulo para cuentas exclusivas de Google. No altera las contraseñas existentes. El diagrama ER y sus metadatos se regeneraron desde el motor.
-
-### Pruebas de este avance
-
-- 147 pruebas del backend: autenticación, JWT, roles, validación, registro, vinculación y verificación criptográfica de Google, consultas de coordinación y administración de asignaciones. Los datos temporales se revierten.
-- 19 peticiones y pruebas Bruno ejecutadas contra la API real: autenticación, permisos y consultas de tutores, estudiantes, periodos y asignaciones desde coordinación.
-- 10 comprobaciones adicionales de registro real en navegador: campos, confirmación, duplicados, creación de estudiante, restauración de sesión y móvil. La cuenta de prueba se eliminó al terminar.
-- 25 comprobaciones de navegador del login: acceso real de los tres perfiles, errores, carga, recarga, almacenamiento según recordar, salida local, token alterado y móvil sin desbordamiento.
-
-La colección versionada está en `bruno`. Abrir esa carpeta en Bruno y ejecutar las peticiones en su orden; el token se conserva solo como variable de ejecución. La prueba de 403 comprueba que el filtro bloquee al estudiante en las rutas de coordinación.
-
-También se puede ejecutar la colección desde esa carpeta con `npx --package @usebruno/cli bru run`. No guardar tokens reales en los archivos versionados. Las pruebas Java se ejecutan con `./mvnw.cmd test` desde `backend`.
-
-## Consultas de coordinación
-
-El backend y las pantallas de coordinación permiten consultar los tutores y estudiantes reales de MySQL. Ambas opciones están disponibles en el menú de coordinación.
-
-| Método | Ruta | Permiso |
-|---|---|---|
-| GET | `/api/coordinacion/tutores` | JWT con rol `coordinador`; respuesta paginada |
-| GET | `/api/coordinacion/estudiantes` | JWT con rol `coordinador`; respuesta paginada |
-
-Estudiantes y Tutores devuelven respuestas paginadas y se ordenan por nombre e identificador. No contienen contraseñas ni hashes. Incluyen cuentas activas e inactivas con su `estado`; sin coincidencias devuelven `contenido: []` y totales de paginación en cero. Los resúmenes generales se conservan aunque los filtros no encuentren filas. Sin token se recibe 401; con rol tutor o estudiante, 403. Se usa `Cache-Control: no-store`.
-
-Los tutores incluyen `id` (del perfil tutor), `usuarioId`, `nombre`, `correo`, `telefono`, `avatarUrl`, `estado`, `departamentoId` y `departamento`.
-
-Los estudiantes incluyen `id` (del perfil estudiante), `usuarioId`, `nombre`, `correo`, `telefono`, `avatarUrl`, `estado`, `matricula`, `periodoId`, `periodo`, `carrera`, `semestre`, `promedio` y `nivelRiesgo`. Se elige el periodo con fecha de inicio más reciente de cada estudiante, aunque esté cerrado; los empates se resuelven por identificador de periodo. La medición más reciente se obtiene de la vista existente, con desempate por identificador. Los estudiantes sin expediente también aparecen, con campos académicos nulos. Sin medición, promedio y riesgo son nulos; no se inventa un valor de riesgo.
-
-No se modificaron tablas, migraciones ni entidades compartidas con el módulo de estudiante. Los archivos nuevos de consulta están separados en controlador, servicio, repositorio y respuestas de coordinación.
-
-Para probar en Bruno, ejecutar primero `coordinacion/iniciar-sesion.bru` y después las consultas de esa carpeta. Se utilizan las cuentas del seed y una variable temporal `token_coordinacion`.
-
-### Listas conectadas en React
-
-Las pantallas de tutores y estudiantes consumen las rutas anteriores con el JWT de la sesión. Muestran carga, error con reintento, lista vacía y búsqueda sin resultados. El botón Actualizar vuelve a consultar el servidor. Al cambiar de pantalla se cancela la consulta pendiente para evitar mostrar una respuesta anterior.
-
-En estudiantes, la búsqueda se ejecuta en MySQL por nombre, correo, matrícula y carrera, sin distinguir mayúsculas ni acentos. En ambas pantallas, búsqueda y estado se combinan en el servidor antes de contar y paginar. Se reciben solo las filas de la página solicitada. Las tarjetas y gráficas mantienen su resumen general calculado en el servidor; no se reducen a la página visible ni a la búsqueda.
-
-Las estadísticas académicas proceden del expediente más reciente de cada estudiante. El promedio general usa únicamente promedios disponibles, sin convertir ausencias en cero. Riesgo nulo se muestra como Sin evaluación. Los registros sin semestre se cuentan aparte. Los periodos pueden ser distintos y se indica en la pantalla. La cifra de horas ficticias fue retirada porque no forma parte de estas consultas.
-
-Las acciones de tutores ya crean, editan y cambian el estado de cuentas en el servidor. Estudiantes continúa como consulta. Las vistas del estudiante y del tutor no se modificaron.
-
-Verificación del frontend: compilación de producción y 22 comprobaciones de navegador, con consultas reales para cotejar filas y JWT; respuestas controladas para fallos de red, listas vacías, reintentos y campos académicos nulos o con promedio cero. No se modificaron registros de MySQL durante estas pruebas.
-
-## Administración de asignaciones
-
-Coordinación puede crear una asignación activa, cambiar el tutor, finalizarla o cancelarla desde Asignaciones. La pantalla consulta MySQL y muestra historial, filtros por periodo y estado, búsqueda y estudiantes sin asignación activa. La tabla ocupa todo el ancho y muestra cinco registros por página, con columnas de estudiante, tutor, fecha, estado y acciones. El icono de detalle despliega periodo, fechas completas, sesiones y motivo. Los paneles de estudiantes sin asignación y acciones rápidas aparecen debajo. Los iconos permiten ver detalle, cambiar tutor, finalizar y cancelar; cancelar conserva el registro.
-
-| Método | Ruta | Función |
-|---|---|---|
-| GET | `/api/coordinacion/periodos` | Periodos registrados |
-| GET | `/api/coordinacion/asignaciones` | Página del historial con filtros, totales y resumen |
-| GET | `/api/coordinacion/asignaciones/exportar` | Todos los registros filtrados, solicitados solo para exportar |
-| GET | `/api/coordinacion/asignaciones/estudiantes?periodoId=<id>` | Estudiantes elegibles del periodo y su asignación activa, si existe |
-| POST | `/api/coordinacion/asignaciones` | Crear una asignación activa (201) |
-| PATCH | `/api/coordinacion/asignaciones/{id}/cambiar-tutor` | Cerrar la anterior y crear otra con el nuevo tutor |
-| PATCH | `/api/coordinacion/asignaciones/{id}/finalizar` | Finalizar sin borrar |
-| PATCH | `/api/coordinacion/asignaciones/{id}/cancelar` | Cancelar sin borrar |
-
-Todas las rutas requieren JWT de coordinación. Las escrituras comprueban además que el usuario conserve su cuenta activa y rol de coordinación en MySQL. No se recibe `asignadoPor` desde React: se obtiene del JWT.
-
-Crear recibe `estudianteId`, `tutorId`, `periodoId` y `motivo` opcional de hasta 1000 caracteres. Cambiar tutor recibe `tutorId` y `motivo` opcional. Finalizar y cancelar no requieren cuerpo; se confirman antes de enviar desde la pantalla.
-
-Para crear o cambiar se exige periodo activo, cuentas de estudiante y tutor activas y un expediente del estudiante con inscripción activa en ese periodo. El estado activo del periodo se toma del catálogo, no de la fecha del equipo. No se permiten dos asignaciones activas para el mismo estudiante y periodo. Las operaciones bloquean el registro del estudiante durante su transacción y la restricción única de MySQL también evita duplicados. Si falla un cambio de tutor, se conserva la asignación original. Los registros pendientes existentes pueden finalizarse o cancelarse; las nuevas asignaciones de coordinación quedan activas directamente.
-
-Las fechas de inicio y cierre se generan en UTC desde MySQL y React las muestra en la zona del navegador. No se permite cerrar una asignación con inicio futuro. Cada cambio de tutor genera otra fila y conserva la anterior finalizada, incluyendo el autor de cada alta. El historial no se elimina. Las sesiones completadas y la última sesión se calculan por estudiante, tutor y periodo, dentro del intervalo de cada asignación (inicio incluido, fin excluido), para no contarlas de nuevo si regresa al mismo tutor.
-
-Exportar asignaciones descarga un CSV con todos los registros que coinciden con los filtros, no solo la página visible. Las fechas del CSV se identifican como UTC y los valores se escapan para evitar que los datos se interpreten como fórmulas. El diseño compacto se comprobó sin desplazamiento horizontal de la tabla en anchos de 1440, 1024 y 882 píxeles; en pantallas pequeñas permite desplazamiento dentro de la tabla. Pasaron 15 comprobaciones de navegador de diseño, paginación, detalle, formularios y exportación, sin modificar registros.
-
-El panel de estudiantes sin asignación activa solo cuenta cuentas y expedientes activos del periodo seleccionado; no incluye estudiantes sin expediente ni pretende contar a todos los usuarios registrados. Para asignar a un estudiante recién registrado se necesita cargar antes su situación académica; la pantalla para administrar expedientes todavía está pendiente. No se agregaron migraciones ni se cambiaron las vistas del estudiante. La elección de tutor desde el estudiante sigue como avance separado y debe respetar la misma unicidad por periodo.
-
-Verificación: pruebas de backend con transacciones revertidas, pruebas de navegador del ciclo completo con registros temporales eliminados al terminar, compilación de frontend y colección Bruno de consultas. Los casos incluyen duplicados, cuentas y periodos inactivos, ausencia de expediente, permisos, cambio inválido, historial y conteo de sesiones.
-
-### Paginación de asignaciones en el servidor
-
-`GET /api/coordinacion/asignaciones` recibe `pagina` (desde 1, por defecto 1), `tamano` (1 a 100, por defecto 5), `periodoId` opcional, `estado` opcional (`activa`, `pendiente`, `finalizada`, `cancelada`) y `busqueda` opcional de hasta 160 caracteres.
-
-La respuesta incluye `contenido`, `pagina`, `tamano`, `totalRegistros`, `totalPaginas` y `resumen` con `total`, `activas` y `pendientes`. El contenido se limita en MySQL con LIMIT/OFFSET y se ordena por inicio e identificador descendentes. Búsqueda por estudiante, matrícula y tutor y filtros se aplican antes de contar y paginar. La búsqueda no distingue mayúsculas ni acentos según el cotejamiento de la base; `%` y `_` se tratan como texto. El resumen de tarjetas corresponde al periodo seleccionado, independientemente de búsqueda y estado.
-
-React solo recibe la página solicitada y muestra botones para todos los índices disponibles, además de Anterior y Siguiente. Al cambiar filtros vuelve a la primera página. La búsqueda espera brevemente al terminar de escribir y cancela consultas anteriores. Cero resultados devuelve `contenido: []`, `totalRegistros: 0`, `totalPaginas: 0` y `pagina: 1`; no se dibujan índices inexistentes. Si la página solicitada dejó de existir, el servidor devuelve la última disponible.
-
-La exportación utiliza `/api/coordinacion/asignaciones/exportar` con los mismos filtros, sin paginación, únicamente al pulsar Exportar. No se descarga todo el historial al abrir la pantalla. La colección Bruno se actualizó al contrato paginado. Se comprobaron 84 pruebas de backend, 13 casos de navegador de páginas, filtros, exportación y reintentos, y 11 peticiones Bruno. No se modificaron tablas ni migraciones.
-
-## Gestión de tutores
-
-La pantalla de Tutores permite agregar, editar, desactivar y reactivar cuentas. El formulario de alta utiliza nombre, correo, contraseña y departamento; al editar solo se cambian nombre, correo y departamento. No se muestran hashes ni contraseñas existentes ni se permite escoger roles. La cuenta nueva recibe únicamente el rol tutor y puede iniciar sesión al terminar el alta.
-
-| Método | Ruta | Función |
-|---|---|---|
-| GET | `/api/coordinacion/tutores` | Tutores paginados con búsqueda y filtros |
-| GET | `/api/coordinacion/tutores/opciones` | Tutores activos para los selectores de Asignaciones |
-| GET | `/api/coordinacion/departamentos` | Catálogo de departamentos, incluidos inactivos para filtrar registros anteriores |
-| POST | `/api/coordinacion/tutores` | Crear cuenta y perfil juntos (201) |
-| PUT | `/api/coordinacion/tutores/{id}` | Editar nombre, correo y departamento |
-| PATCH | `/api/coordinacion/tutores/{id}/desactivar` | Desactivar sin borrar historial |
-| PATCH | `/api/coordinacion/tutores/{id}/activar` | Reactivar la cuenta |
-
-Todas las rutas requieren coordinación. Las escrituras comprueban además el estado y los roles actuales del autor en MySQL. La creación es transaccional, usa BCrypt y rechaza correos ya registrados, sin convertir cuentas existentes en tutores. La contraseña debe tener al menos 8 caracteres, mayúscula, número y carácter especial, y no superar 72 bytes UTF-8. El `.env` no cambia y no hay migraciones nuevas.
-
-La lista recibe `pagina` desde 1, `tamano` de 1 a 100 (por defecto 5), `busqueda` de hasta 160 caracteres, `estado` opcional (`activo` o `inactivo`) y `departamentoId` opcional. Responde `contenido`, `pagina`, `tamano`, `totalRegistros`, `totalPaginas` y `resumen` con total, activos e inactivos de todos los tutores. MySQL filtra antes de contar y paginar con LIMIT/OFFSET; la búsqueda cubre nombre, correo y departamento. React muestra los índices disponibles y vuelve a la primera página al cambiar filtros. La consulta de opciones se pide aparte para no limitar los selectores a los primeros cinco tutores.
-
-El alta requiere departamento activo; cambiar de departamento también. Se permite conservar el departamento actual aunque después quede inactivo. Editar conserva contraseña, teléfono, avatar y permisos de la cuenta. Crear o editar un correo duplicado devuelve 409; campos inválidos, 422. Los registros inexistentes devuelven 404.
-
-Desactivar bloquea nuevos inicios de sesión y la restauración mediante consulta de sesión. Los JWT ya emitidos mantienen su vencimiento; la revocación de sesiones sigue pendiente. Las asignaciones y sesiones del tutor se conservan, y el tutor inactivo deja de aparecer entre las opciones para nuevas asignaciones. El estado pertenece a la cuenta compartida, por lo que también afecta sus otros roles si los tiene. Las cuentas de coordinación no pueden desactivarse desde esta pantalla. React pide confirmación antes de cambiar el estado.
-
-Verificación: 99 pruebas Java aprobadas, compilación del frontend, 20 comprobaciones de navegador de alta, edición, duplicados, paginación, filtros, login, estados y compatibilidad con Asignaciones, y colección Bruno actualizada. Las pruebas Java revierten sus datos y las de navegador eliminan su tutor y departamentos temporales. No se modificaron los datos de demostración existentes.
-
-## Avisos de coordinación
-
-La pantalla de Avisos incluye Crear aviso, detalle, edición y retiro, con búsqueda y filtros por categoría, prioridad y estado desde el backend. Lista cinco registros por página y muestra los índices disponibles. Las tarjetas resumen todos los avisos: total, vigentes, retirados y prioridad alta vigente. Las lecturas se muestran por aviso, no como un estado personal de coordinación.
-
-| Método | Ruta | Función |
-|---|---|---|
-| GET | `/api/coordinacion/avisos` | Lista paginada con filtros y totales |
-| GET | `/api/coordinacion/avisos/destinatarios` | Selector paginado de estudiantes y tutores activos |
-| GET | `/api/coordinacion/avisos/{id}` | Detalle y destinatarios con sus fechas de lectura y ocultación |
-| POST | `/api/coordinacion/avisos` | Guardar aviso y destinatarios juntos (201) |
-| PUT | `/api/coordinacion/avisos/{id}` | Editar un aviso vigente |
-| PATCH | `/api/coordinacion/avisos/{id}/retirar` | Retirar conservando aviso, destinatarios y lecturas |
-
-Todas las rutas requieren coordinación; las escrituras comprueban también el estado y rol actuales del autor en MySQL. El autor se obtiene del JWT. No hay cambios de esquema ni migraciones nuevas.
-
-La lista admite `pagina` desde 1, `tamano` de 1 a 100 (por defecto 5), `busqueda` de hasta 160 caracteres, `categoria` de hasta 40, `prioridad` (`normal`, `media`, `alta`) y `estado` (`vigente`, `retirado`). Los filtros opcionales se omiten para consultar todos sus valores. Responde `contenido`, `pagina`, `tamano`, `totalRegistros`, `totalPaginas` y `resumen`. MySQL filtra antes de contar y paginar; no se descargan todos los avisos para recortarlos en React.
-
-El selector admite página, tamaño (por defecto 10), búsqueda y `rol` opcional (`estudiante` o `tutor`). Un usuario con ambos roles aparece una vez. La selección se conserva al cambiar páginas.
-
-Crear o editar recibe `titulo` de hasta 200 caracteres, `descripcion` de hasta 10000, `categoria` de hasta 40, `prioridad`, `destinatarios` y `usuarioIds` cuando corresponda. `destinatarios` permite `todos` (estudiantes y tutores activos), `estudiantes`, `tutores` o `seleccion`. Esta última acepta hasta 500 identificadores de usuarios; se rechazan inexistentes, inactivos o sin los roles destinatarios. Los grupos se resuelven al guardar y no incorporan automáticamente usuarios registrados después. Una selección vacía o sin usuarios elegibles no deja un aviso incompleto.
-
-Al editar se ofrece `conservar` para mantener la lista actual, incluso si algún destinatario se desactivó después. Si se reemplaza la selección, las lecturas y ocultaciones de los usuarios que permanecen se conservan. Crear no admite `conservar`. Los avisos retirados no pueden editarse. No existe borrado físico desde la pantalla.
-
-Este avance solo guarda los avisos internos en `avisos` y `aviso_destinatarios`. No genera filas en `envios_comunicacion`, no usa servicios externos y no modifica las pantallas ni crea endpoints de lectura para estudiante/tutor. La vista existente `v_avisos_visibles` ya excluye los avisos retirados y las ocultaciones personales.
-
-Para el colaborador: [tablas, consulta y reglas de lectura de avisos](database/AVISOS_PARA_CONSULTA.md). La consulta debe usar `usuarios.id` del JWT, no un identificador elegido por el cliente ni el del perfil de estudiante/tutor. Las acciones de lectura y ocultación personal quedan para su módulo.
-
-Verificación: 115 pruebas del backend y 20 comprobaciones de navegador, incluyendo creación, selección en varias páginas, persistencia, edición conservando lecturas, retiro, filtros y ausencia de envíos externos. Los datos temporales se revirtieron o eliminaron al terminar. Las solicitudes de consulta están incluidas en Bruno.
-
-## Reportes de coordinación
-
-La pantalla de Reportes consulta los registros reales de `reportes`, sus estudiantes, tutores, periodos y motivos. La búsqueda, los filtros, la paginación, los totales y la distribución de motivos se ejecutan en el backend/MySQL. React envía criterios, muestra la respuesta y descarga los archivos; no filtra ni recorta registros.
-
-| Método | Ruta | Función |
-|---|---|---|
-| GET | `/api/coordinacion/reportes` | Página de reportes, resumen y distribución de motivos filtrados |
-| GET | `/api/coordinacion/reportes/motivos` | Catálogo de motivos, incluidos inactivos para consultar historial |
-| GET | `/api/coordinacion/reportes/exportar/pdf` | PDF con todos los resultados de los filtros aplicados |
-| GET | `/api/coordinacion/reportes/{id}/pdf` | PDF individual con el contenido completo del reporte |
-
-Las rutas requieren JWT de coordinación. Las descargas comprueban además que la cuenta y el rol sigan activos en MySQL. Se devuelve `application/pdf`, `Content-Disposition: attachment` y `Cache-Control: no-store`. Un reporte inexistente devuelve 404; errores de acceso y validación conservan el formato JSON de la API.
-
-Filtros opcionales: `busqueda` por estudiante, matrícula o tutor (hasta 160 caracteres), `estado` (`pendiente` o `completado`), `periodoId`, `motivoId`, `desde` y `hasta` (fechas ISO). Las fechas inicial y final son inclusivas sobre la fecha civil del reporte; una fecha final anterior a la inicial devuelve 422. Los filtros vacíos se omiten de la petición. Se validan los parámetros con Bean Validation y la coherencia del intervalo en el servicio.
-
-La página recibe `pagina` desde 1 y `tamano` de 1 a 100, por defecto 5. Se ordena por fecha e identificador descendentes y se pagina con LIMIT/OFFSET en MySQL. La respuesta incluye `contenido`, `pagina`, `tamano`, `totalRegistros`, `totalPaginas`, `resumen` (total, completados y pendientes) y `motivos` (id, nombre, cantidad y porcentaje redondeado a un decimal). El resumen y los motivos usan todos los resultados filtrados, no solo la página visible. La consulta es una transacción de lectura para mantener coherencia entre página, conteo y agregados.
-
-El botón Buscar reporte aplica los criterios y vuelve a la primera página. Cambiar un campo no procesa los registros en React. La exportación global corresponde a la búsqueda aplicada, aunque el usuario esté viendo otra página. El botón de cada fila descarga solo ese reporte. Los archivos se generan en Java con Apache PDFBox 3.0.8, con texto ajustado a márgenes, encabezados, continuaciones y numeración de páginas. La fecha de generación se identifica como UTC. Se incluyen las fuentes Bitstream Vera y su licencia en `backend/src/main/resources/fuentes`, para que el PDF no dependa de fuentes instaladas en Windows o en el VPS. Caracteres fuera de la cobertura de la fuente se sustituyen por `?` con una nota en el documento.
-
-El PDF contiene los datos disponibles al exportar y no es una versión histórica inalterable. Descargar no completa reportes, no cambia sesiones y no escribe estados en la base. Estado del reporte y estado de la tutoría son conceptos distintos; la pantalla utiliza `reportes.estado`. Carrera y semestre proceden de la situación académica del mismo periodo del reporte, sin mezclar otros periodos. No se agregaron migraciones ni acciones de escritura ni se cambió la pantalla de reportes del tutor.
-
-Comprobación: 128 pruebas del backend aprobadas, compilación del frontend, 17 comprobaciones de navegador con filtros reales del servidor y descargas, y revisión visual y extracción de texto de PDF multipágina con acentos y contenido largo. Los datos temporales se revirtieron o eliminaron al terminar. La colección Bruno incluye consultas y una descarga PDF.
-
-Referencia de la dependencia: [Apache PDFBox](https://pdfbox.apache.org/3.0/getting-started.html).
-
-## Conexión del backend con MySQL
-
-El backend ya puede conectarse a `tutoria`. Usa las variables `BD_SERVIDOR`, `BD_PUERTO`, `BD_NOMBRE`, `BD_USUARIO` y `BD_CONTRASENA`, definidas en `backend/.env` o en el entorno del proceso. El archivo `.env` se lee como propiedades de Java: escribe los valores sin comillas ni `export`. Para una contraseña con barras invertidas, escribe cada barra dos veces.
-
-`backend/.env.example` sirve como plantilla sin secretos; `application.properties.example` muestra la configuración compartida. El `.env` real está excluido por el `.gitignore` general.
-
-Desde `backend`, ejecutar `./mvnw.cmd spring-boot:run` en Windows (o `./mvnw spring-boot:run` en Linux). La prueba de arranque se ejecuta con `./mvnw.cmd test`. Hibernate no crea ni cambia tablas. Flyway revisa las migraciones al arrancar y aplica solamente las que faltan, antes de iniciar JPA.
-
-## Respuestas de error del backend
-
-El paquete `errores` contiene `RespuestaError` y `ManejadorErrores`. Cubre validación de formularios con `@Valid`, JSON que no se puede leer y errores de acceso. Los errores de los filtros de Spring Security usan el mismo formato JSON.
-
-Cuando los campos no cumplen sus reglas, la respuesta es HTTP 422:
-
-```json
-{
-  "estado": 422,
-  "mensaje": "Revisa los campos del formulario.",
-  "erroresPorCampo": {
-    "correo": ["Escribe un correo válido."]
-  }
-}
-```
-
-Cada campo puede tener varios mensajes. Los errores del formulario completo se agrupan en `general`. Un cuerpo vacío, JSON mal escrito o un tipo incorrecto devuelve HTTP 400 con un mensaje general y `erroresPorCampo` vacío. No se devuelve el contenido rechazado ni detalles de la excepción.
-
-Las reglas se escriben en los DTOs mediante Bean Validation; el manejador organiza sus mensajes. El login devuelve 401 para credenciales incorrectas y 403 para cuentas inactivas o sin rol. Los errores de recursos inexistentes y otros módulos se agregarán en sus respectivos avances.
-
-Las seis pruebas de este manejador usan un controlador que existe solamente en los archivos de prueba, sin necesitar MySQL. La prueba general de arranque continúa utilizando la configuración local de la base. Ejecutar todo con `./mvnw.cmd test` desde `backend`; Maven reconoce también los archivos terminados en `Pruebas` para conservar los nombres en español. El avance inicial pasó sus siete pruebas.
-
-## Entidades de usuarios y roles
-
-El paquete `entidades` contiene `Usuario` y `Rol`, que representan las tablas existentes `usuarios` y `roles`. La relación muchos a muchos utiliza `usuario_roles`; su fecha `asignado_en` sigue siendo completada por MySQL. No se modificó el esquema ni el diagrama ER.
-
-Los atributos y métodos propios están en español. `contrasenaHash` corresponde a la columna existente `password_hash`; esta clase recibe un hash ya generado, no cifra contraseñas por sí sola. El usuario permite actualizar sus datos, activar/desactivar su estado y asignar o quitar roles. Las fechas se leen desde MySQL después de recargar la entidad.
-
-Los roles se cargan cuando se consultan (LAZY), sin guardar ni borrar automáticamente los roles compartidos al cambiar un usuario. Las entidades no implementan servicios, endpoints ni autenticación, y no se devuelven al frontend. Las consultas están en los repositorios descritos abajo.
-
-Se añadieron tres pruebas sobre MySQL: lectura del catálogo de roles, guardado/lectura de un usuario con varios roles y eliminación de vínculos sin borrar roles compartidos. Estas pruebas usan `ddl-auto=validate` para comprobar las tablas sin cambiarlas y revierten sus datos al terminar. El avance de entidades pasó sus diez pruebas.
-
-## Repositorios de usuarios y roles
-
-El paquete `repositorios` contiene `RepositorioUsuarios` y `RepositorioRoles`. Son las clases de acceso a datos utilizadas por el servicio de autenticación; no exponen rutas HTTP directamente.
-
-- `buscarPorCorreo` busca un usuario y mantiene sus roles sin cargar hasta que se necesiten.
-- `buscarPorCorreoConRoles` obtiene al usuario y sus roles juntos. También devuelve al usuario si aún no tiene roles.
-- `buscarPorIdConRoles` permite recuperar la cuenta actual al verificar una sesión.
-- `buscarPorCodigo` busca un rol por su código, por ejemplo `coordinador`, no por su nombre visible.
-
-Las búsquedas devuelven `Optional`: si no hay coincidencia, el resultado está vacío. Los valores recibidos se pasan como parámetros de la consulta. Los métodos propios están en español; se conservan los nombres de las clases, anotaciones y operaciones heredadas de Spring Data.
-
-Se agregaron seis pruebas sobre MySQL para comprobar búsquedas, resultados vacíos, carga de roles y entradas con comillas. Los registros de esas pruebas se revierten al terminar. El avance de repositorios pasó sus dieciséis pruebas. No se modificó el esquema ni el ER.
-
-## Base de datos
-
-`tutoria` está en MySQL Community Server 26.10.0 con **28 tablas funcionales, 241 columnas, 46 claves foráneas, 39 CHECK y 4 vistas**. Existe además la tabla técnica `flyway_schema_history` (29 tablas físicas en total).
-
-Las 24 tablas originales se adoptaron como baseline V1 tras comparar columnas y claves con la estructura existente. Flyway aplicó V2 sin eliminar cuentas ni datos:
-
-- `tokens_recuperacion`: digest SHA-256 del token, usuario, vencimiento y uso. El token original no se almacena.
-- `tokens_revocados`: identificador JWT `jti`, usuario, vencimiento y motivo de revocación. No almacena el JWT completo.
-- `envios_comunicacion`: correo/SMS/WhatsApp, destinatario, evento, idempotencia, proveedor, intentos, estado y errores.
-
-El login ya está implementado en la API. Recuperación de contraseña, revocación de tokens al cerrar sesión y comunicaciones reales permanecen pendientes; sus tablas ya están preparadas.
-
-## Migraciones e instalación
-
-Las migraciones oficiales están en `backend/src/main/resources/base_datos/migraciones`. No editar una migración ya aplicada; crear V3, V4, etc. El POM de `database` permite trabajar con Flyway sin arrancar Spring Boot.
-
-Requisitos: Java, Maven Wrapper del backend, Node.js, MySQL y una base vacía creada con utf8mb4/utf8mb4_0900_ai_ci. Las migraciones crean las tablas, no el servidor ni las credenciales.
-
-Desde la raíz:
-
-```powershell
-npm install --prefix frontend/.mysql-tools --no-save --package-lock=false mysql2 @viz-js/viz @resvg/resvg-js
-# Crear frontend/database/connection.local.json según connection.example.json.
-node database/flyway.cjs migrate
-node database/flyway.cjs validate
-# Solo para desarrollo/demostración:
-node database/seed.cjs
-```
-
-`migrate` en una base vacía ejecuta V1, V2 y V3. La base local existente ya está en V3: no ejecutar baseline nuevamente. Para adoptar otra base preexistente, comparar su estructura con V1 y respaldarla antes de usar baseline; el baseline automático está deshabilitado. `clean` está deshabilitado.
-
-La herramienta lee las credenciales del archivo local excluido por Git y las entrega a Flyway mediante variables de entorno. No las imprime ni las incorpora al POM. `FLYWAY_URL` permite elegir otra conexión JDBC; `FLYWAY_OFFLINE=true` permite usar las dependencias ya descargadas. El backend utiliza la misma versión de Flyway (13.12.1) y ejecuta automáticamente las migraciones al arrancar. Las herramientas de `database` siguen disponibles para mantenimiento.
-
-## Preparar la base en otra computadora
-
-No hace falta copiar la base de datos de otro integrante ni compartir su contraseña. Cada persona usa su propio MySQL y sus credenciales locales.
-
-Crear solamente la base vacía desde MySQL Workbench o un cliente MySQL:
+Crear una base vacía en MySQL:
 
 ```sql
 CREATE DATABASE tutoria
@@ -355,169 +75,277 @@ CREATE DATABASE tutoria
   COLLATE utf8mb4_0900_ai_ci;
 ```
 
-Desde la carpeta `backend`, copiar la plantilla y completar los datos de esa computadora:
+No es necesario crear las tablas manualmente. Flyway aplica las migraciones al iniciar el backend. Las migraciones están en [backend/src/main/resources/base_datos/migraciones](backend/src/main/resources/base_datos/migraciones).
+
+### Backend
+
+Desde la raíz del proyecto, en PowerShell:
 
 ```powershell
-Copy-Item .env.example .env
-# Editar .env con las credenciales de MySQL y una JWT_CLAVE propia en Base64.
+Copy-Item backend/.env.example backend/.env
+```
+
+Completar en `backend/.env`:
+
+```dotenv
+BD_SERVIDOR=127.0.0.1
+BD_PUERTO=3306
+BD_NOMBRE=tutoria
+BD_USUARIO=tu_usuario_mysql
+BD_CONTRASENA=tu_contrasena_mysql
+JWT_CLAVE=tu_clave_aleatoria_en_base64
+JWT_MINUTOS_VIGENCIA=15
+ORIGENES_PERMITIDOS=http://localhost:5173,http://127.0.0.1:5173
+```
+
+Generar una clave JWT de al menos 32 bytes:
+
+```powershell
+node -e "console.log(require('node:crypto').randomBytes(32).toString('base64'))"
+```
+
+Copiar el resultado en `JWT_CLAVE`. Después iniciar el backend:
+
+```powershell
+cd backend
 .\mvnw.cmd spring-boot:run
 ```
 
-Al arrancar, Flyway ejecuta V1, V2 y V3 sobre esa base vacía. Quedan creadas las 28 tablas funcionales, las 4 vistas, los catálogos iniciales y su tabla de historial. Volver a arrancar no repite las migraciones aplicadas. Hibernate conserva `ddl-auto=none`. Se comprobaron ambos arranques con una base temporal vacía y se confirmó que la base principal conserva sus datos.
+En Linux, utilizar `./mvnw spring-boot:run`. La API local escucha en `http://localhost:8080/api`.
 
-Los usuarios y ejemplos se cargan aparte: abrir `database/seeds/001_datos_demo.sql` en MySQL Workbench, seleccionar `tutoria` como base de trabajo y ejecutar el script. También se puede usar `node database/seed.cjs` con la configuración local de las herramientas. El seed crea las cuentas documentadas abajo y se puede repetir sin duplicarlas. El arranque del backend no carga estos datos automáticamente.
+### Datos de prueba
 
-Si ya existe una base con tablas, no importar el esquema antiguo ni activar baseline automático para saltarse errores. La base local original ya tiene su baseline registrado; una base nueva vacía no necesita ese paso. Las migraciones que ya estén aplicadas se conservan sin editar.
+Después del primer arranque del backend, ejecutar [database/seeds/001_datos_demo.sql](database/seeds/001_datos_demo.sql) sobre la base `tutoria`, por ejemplo desde MySQL Workbench.
 
-## Datos de demostración y acceso futuro
+También se puede ejecutar desde el cliente de MySQL, abierto en la raíz del proyecto:
 
-El seed explícito `database/seeds/001_datos_demo.sql` conserva las cuentas existentes y se puede repetir sin duplicar los ejemplos. Se verificó también desde una base vacía.
-
-| Rol | Correo | Contraseña de demostración |
-|---|---|---|
-| Coordinación / administrador | coordinacion@demo.example | CoordDemo!2026 |
-| Tutor | tutor@demo.example | TutorDemo!2026 |
-| Estudiante | estudiante@demo.example | AlumnoDemo!2026 |
-
-Hay 31 cuentas (1 coordinación, 15 tutores y 15 estudiantes), 15 sesiones, 15 reportes, 15 avisos, 15 conversaciones y 30 mensajes. Los perfiles adicionales usan tutor02..tutor15@demo.example y estudiante02..estudiante15@demo.example, con la misma contraseña de demostración de su rol. Todas las contraseñas están hasheadas con BCrypt.
-
-Los registros de comunicaciones son ficticios, están marcados como fallidos con `DEMO_NO_ENVIAR` y no representan entregas reales. No se generaron tokens de recuperación ni JWT activos. Los catálogos y tablas técnicas no necesitan 15 filas: roles tiene 3 y motivos tiene 4. El detalle por tabla está en `database/verificacion-v2.json`.
-
-Estas cuentas permiten iniciar sesión desde React cuando ambos proyectos están levantados y el seed está cargado. Los datos del resto de las pantallas todavía son de demostración.
-
-## Diagrama entidad-relación actualizado
-
-El diagrama procede de los metadatos del MySQL real; incluye las tres tablas nuevas, FK compuestas y columnas generadas. El historial técnico de Flyway se excluye del dominio.
-
-![Diagrama ER físico](frontend/database/diagrama-er/tutoria-er.png)
-
-- [SVG ampliable](frontend/database/diagrama-er/tutoria-er.svg)
-- [Mermaid editable](frontend/database/diagrama-er/tutoria-er.mmd)
-- [Diccionario, índices y restricciones](frontend/database/diagrama-er/DIAGRAMA_ER.md)
-- [Respaldo SQL de estructura V3 sin datos sensibles](database/respaldo_estructura_v3.sql)
-
-## Verificación realizada
-
-```powershell
-node frontend/database/manage.cjs --check
-node frontend/database/manage.cjs --test
-node database/verificar-v2.cjs
-node database/verificar-migraciones.cjs
-node database/exportar-er.cjs
+```sh
+mysql -h 127.0.0.1 -P 3306 -u tu_usuario_mysql -p tutoria
 ```
 
-Pasaron 21 pruebas de integridad (12 originales y 9 de V2). Sus registros temporales se revierten. También se ejecutaron V1, V2 y V3 en una base temporal vacía, se repitió el seed y se verificaron los conteos; esa base temporal se eliminó al terminar. La base principal conserva sus datos.
+Dentro del cliente:
 
-Flyway informa que MySQL 26.10 es más reciente que su última versión verificada. Las migraciones y comprobaciones de este proyecto sí se ejecutaron correctamente sobre este servidor; conservar estas pruebas al actualizar dependencias.
+```sql
+SOURCE database/seeds/001_datos_demo.sql;
+```
 
-El respaldo local anterior a la migración está en `database/backups`, excluido de Git. El archivo `frontend/database/001_tutoria.sql` se conserva como referencia histórica V1; no debe usarse para nuevas instalaciones. El comando antiguo `manage.cjs --create` está deshabilitado.
+El seed incluye las cuentas de evaluación y los registros de demostración. No se carga automáticamente al iniciar Spring Boot y puede repetirse sin duplicar sus ejemplos.
 
-Referencia: [baseline de Flyway](https://github.com/flyway/flyway/blob/main/documentation/Reference/Commands/Baseline.md).
+### Frontend
 
-## Inicio de coordinación
+En otra terminal, desde la raíz:
 
-La pantalla consulta `GET /api/coordinacion/inicio`, protegido para coordinación y sin caché. El servidor calcula todos los indicadores y agrupaciones; el frontend los presenta, con carga, actualización y reintento ante errores.
+```powershell
+cd frontend
+npm ci
+Copy-Item .env.example .env
+npm run dev
+```
 
-El total incluye todos los perfiles de estudiantes. Tutores activos cuenta perfiles cuya cuenta está activa. Estudiantes en riesgo considera niveles medio y alto en la última medición del periodo más reciente de cada estudiante; los perfiles sin evaluación se informan por separado. Este indicador no depende de reportes pendientes y conserva el criterio de la consulta de estudiantes.
+Abrir `http://localhost:5173`. Con `VITE_URL_API=/api`, Vite redirige las peticiones al backend local.
 
-La gráfica de motivos representa todos los reportes registrados, con cantidades y porcentajes calculados en el servidor. La gráfica mensual incluye sesiones completadas de los seis meses calendario más recientes, hasta el momento de consulta en UTC. El servidor incluye mes y año y completa con cero los meses sin sesiones. Las consultas se ejecutan en una transacción de lectura.
+Si un archivo `.env` ya está configurado, conservarlo en lugar de reemplazarlo por el ejemplo.
 
-No se modificaron tablas, migraciones ni módulos de estudiantes o tutores. Verificación: 136 pruebas del backend aprobadas, compilación del frontend y 12 comprobaciones de navegador de cifras reales, meses, errores, reintentos y adaptación de pantalla. Las pruebas del backend revierten sus registros y las del navegador no modifican la base.
+## Credenciales de evaluación
 
-## Paginación de estudiantes en coordinación
+| Rol | Correo | Contraseña |
+| --- | --- | --- |
+| Coordinación | `coordinacion@demo.example` | `CoordDemo!2026` |
+| Tutor | `tutor@demo.example` | `TutorDemo!2026` |
+| Estudiante | `estudiante@demo.example` | `AlumnoDemo!2026` |
 
-`GET /api/coordinacion/estudiantes` acepta `pagina` (desde uno), `tamano` (diez por defecto, máximo cien), `busqueda` (hasta ciento sesenta caracteres) y `estado` (`todos`, `activo` o `inactivo`). Los parámetros inválidos devuelven errores de validación. La búsqueda trata los caracteres de comodín como texto literal y usa parámetros SQL.
+Coordinación es el perfil de administración disponible en la aplicación. Estas cuentas corresponden a los datos de demostración.
 
-La respuesta contiene `contenido`, `pagina`, `tamano`, `totalRegistros`, `totalPaginas`, `resumen`, `distribucionRiesgo`, `distribucionSemestres` y `enRiesgo`. El servidor ajusta páginas fuera de rango a la última disponible; sin coincidencias devuelve página uno y cero páginas. El resumen, las distribuciones y el panel de riesgo abarcan todos los perfiles y mantienen el criterio del expediente más reciente. El panel de riesgo recibe únicamente sus registros necesarios. El promedio excluye ausencias y conserva valores cero. Todo se consulta en una transacción de lectura.
+## Base de datos y diagrama ER
 
-Se conservaron estilos, distribución, tarjetas, gráficas, filtros y las ocho columnas. Solo se añadieron los controles de página debajo de la tabla. La búsqueda espera brevemente al escribir, reinicia la página y cancela consultas anteriores. El frontend no filtra, agrupa ni recorta estudiantes. No se modificaron tablas ni migraciones, ni las vistas del estudiante o tutor.
+Las migraciones V1 a V8 definen el esquema. Hibernate tiene `ddl-auto=none`; la estructura se administra con Flyway. No modificar una migración aplicada: los cambios deben agregarse en una nueva versión.
 
-Verificación: 147 pruebas del backend, compilación del frontend, 21 comprobaciones del navegador y colección Bruno actualizada al contrato paginado. Las pruebas del backend revierten sus registros y las del navegador no modifican la base.
+El siguiente diagrama resume las relaciones principales del sistema, incluidas las de recuperación y notificaciones:
 
-## Recuperación de contraseña: base del backend
+```mermaid
+erDiagram
+    usuarios ||--o{ usuario_roles : tiene
+    roles ||--o{ usuario_roles : asigna
+    usuarios ||--o| estudiantes : identifica
+    usuarios ||--o| tutores : identifica
+    usuarios ||--o{ identidades_externas : vincula
+    usuarios ||--o| recuperaciones_contrasena : solicita
+    departamentos ||--o{ carreras : agrupa
+    departamentos ||--o{ tutores : agrupa
+    estudiantes ||--o{ situaciones_academicas : registra
+    periodos_academicos ||--o{ situaciones_academicas : organiza
+    carreras ||--o{ situaciones_academicas : corresponde
+    situaciones_academicas ||--o{ mediciones_academicas : evalua
+    situaciones_academicas ||--o{ asignaciones_tutor : recibe
+    tutores ||--o{ asignaciones_tutor : atiende
+    tutores ||--o{ disponibilidades_tutor : publica
+    tutores ||--o{ sesiones : imparte
+    situaciones_academicas ||--o{ sesiones : solicita
+    sesiones ||--o{ sesion_cambios : conserva
+    situaciones_academicas ||--o{ observaciones_estudiante : recibe
+    situaciones_academicas ||--o{ reportes : registra
+    tutores ||--o{ reportes : elabora
+    motivos_reporte ||--o{ reportes : clasifica
+    usuarios ||--o{ actividades_personales : organiza
+    usuarios ||--o{ avisos : publica
+    avisos ||--o{ aviso_destinatarios : distribuye
+    usuarios ||--o{ aviso_destinatarios : recibe
+    conversaciones ||--o{ conversacion_participantes : incluye
+    usuarios ||--o{ conversacion_participantes : participa
+    conversaciones ||--o{ mensajes : contiene
+    usuarios ||--o{ mensajes : envia
+    sesiones ||--o{ notificaciones_sesion : genera
+```
 
-La migración V4 añade `recuperaciones_contrasena`, vinculada a usuarios, para guardar un código protegido con BCrypt por cuenta, vencimiento, intentos y uso. La tabla previa `tokens_recuperacion` se conserva. El diagrama ER anterior debe incorporar esta nueva tabla y su relación con usuarios.
+Las relaciones N:M incluyen usuarios–roles mediante `usuario_roles`, avisos–usuarios mediante `aviso_destinatarios` y conversaciones–usuarios mediante `conversacion_participantes`.
 
-Se prepararon dos POST públicos: `/api/autenticacion/recuperacion/solicitar` recibe `correo`; `/api/autenticacion/recuperacion/cambiar-contrasena` recibe `correo`, `codigo`, `contrasena` y `confirmacion`. Las respuestas llevan `Cache-Control: no-store`. Los códigos tienen seis dígitos, vencen a los diez minutos y admiten cinco intentos. Hay una espera de un minuto entre envíos y cada nuevo código reemplaza al anterior. El cambio guarda BCrypt y consume el código con bloqueo de la cuenta para evitar usos simultáneos.
+El [respaldo SQL de estructura V3](database/respaldo_estructura_v3.sql) se conserva como referencia de esa versión. No representa por sí solo el esquema V8; para una instalación actual utilizar todas las migraciones y el seed, sin importar previamente ese respaldo sobre una base nueva.
 
-Este avance prepara los endpoints y la persistencia. `EnvioCodigoSmtp` mantiene deshabilitadas las solicitudes con una respuesta 503 hasta completar y activar la configuración SMTP. No se imprimen códigos ni se devuelven al cliente. La solicitud rechaza con 422 los correos desconocidos, cuentas inactivas y cuentas que solo usan Google. El frontend muestra el error y permanece en el formulario de correo. Esta respuesta permite conocer si un correo está registrado. No hay cambios en el frontend todavía.
+## Configuración de integraciones
 
-Las sesiones JWT ya emitidas conservan su vencimiento actual; este avance no añade revocación ni renovación de sesiones. El siguiente paso es conectar el proveedor de correo y después los formularios de recuperación.
+### Recuperación de contraseña por correo
 
-## Correo de recuperación con Gmail
+El usuario solicita un código para un correo registrado. El código tiene seis dígitos, vence en diez minutos, permite hasta cinco intentos y solo se puede utilizar una vez. Al cambiar la contraseña se invalidan las sesiones anteriores de la cuenta.
 
-El envío SMTP está integrado mediante Spring Mail. En `backend/.env` se prepararon estas variables: `CORREO_SERVIDOR=smtp.gmail.com`, `CORREO_PUERTO=587`, `CORREO_SSL=false` y `CORREO_HABILITADO=false`. Completar `CORREO_USUARIO` con la cuenta Gmail, `CORREO_REMITENTE` con esa misma cuenta y `CORREO_CONTRASENA` con su contraseña de aplicación. Después cambiar `CORREO_HABILITADO=true` y reiniciar el backend. Las credenciales pertenecen solo al backend y no deben guardarse en archivos versionados.
+En producción se utiliza Brevo por el puerto 587 con autenticación y STARTTLS. El ejemplo sin credenciales está en [backend/.env.brevo.example](backend/.env.brevo.example):
 
-El puerto indicado usa STARTTLS obligatorio y verifica la identidad del servidor. Los tiempos de conexión y envío están limitados. Un fallo SMTP devuelve un mensaje general y revierte el nuevo código para permitir reintentar. El correo contiene el código, su vigencia y una indicación para ignorarlo si no fue solicitado. Las pruebas usan un envío simulado y no mandan correos reales. Falta completar las credenciales para probar Gmail real; la conexión del frontend se hará en el siguiente avance.
+```dotenv
+CORREO_HABILITADO=true
+CORREO_SERVIDOR=smtp-relay.brevo.com
+CORREO_PUERTO=587
+CORREO_USUARIO=tu_login_smtp
+CORREO_CONTRASENA=tu_clave_smtp
+CORREO_REMITENTE=tu_remitente_verificado
+CORREO_SSL=false
+CORREO_AUTENTICACION=true
+CORREO_STARTTLS=true
+```
 
-## Completar datos del estudiante
+El login y la clave SMTP se obtienen en Brevo; no son la contraseña de la cuenta ni una API key. El dominio y remitente deben estar autorizados en el proveedor. Las credenciales reales se guardan fuera de Git.
 
-Al entrar con una cuenta de estudiante se consulta `GET /api/estudiante/perfil`. Si aún no tiene una situación académica registrada, aparece una ventana con carrera, periodo y semestre. Las carreras disponibles deben estar activas y pertenecer a un departamento activo; los periodos deben estar activos. Si falta algún catálogo, se permite reintentar o cerrar sesión.
+El VPS también tiene Postfix y OpenDKIM. La entrega directa con Postfix depende de la habilitación SMTP de AWS; el envío activo de SITUA utiliza Brevo.
 
-`PUT /api/estudiante/perfil` guarda esos tres datos para el estudiante de la sesión, sin aceptar identificadores de otras cuentas. Se verifica la cuenta activa y su rol, y se bloquea el perfil mientras se crea el expediente para evitar duplicados. Una solicitud repetida conserva el expediente ya existente. Los datos se guardan en `situaciones_academicas`; no se añadieron tablas ni migraciones. Nombre, correo y matrícula se conservan del registro; promedio y riesgo no se solicitan al estudiante.
+### Acceso con Google
 
-La comprobación también se aplica al registro y al acceso con Google, porque ambos abren la misma vista de estudiante. Los perfiles con un expediente existente entran directamente. Se conserva el diseño de las páginas. Verificación: compilación del frontend y backend, cinco pruebas sobre MySQL con registros revertidos y ocho comprobaciones de navegador con respuestas controladas, sin modificar cuentas reales.
+Configurar el mismo ID público de cliente OAuth web en `GOOGLE_CLIENTE_ID` del backend y `VITE_GOOGLE_CLIENTE_ID` del frontend. Autorizar en Google Cloud los orígenes locales y `https://situa.oaxacoders.tech`, según el entorno. Reiniciar el backend y recompilar el frontend después de cambiar estas variables.
 
-## Elección de tutor desde estudiante
+### SMS y WhatsApp
 
-En Mis tutorías se añadió Mi tutor y la ventana Elegir tutor. Se conservó la distribución de las secciones existentes. El estudiante elige entre tutores con cuenta activa y se inscribe en un periodo activo donde ya tiene inscripción académica activa. Si hay varios periodos propios disponibles, puede seleccionar uno. La búsqueda y la paginación de tutores se realizan en el servidor.
+Los estudiantes pueden registrar su teléfono internacional y autorizar cada canal desde Datos de contacto. El backend dispone de una cola de avisos asociada a la confirmación de tutorías y de una integración con Twilio. Los dos canales permanecen desactivados hasta configurar sus credenciales, remitentes y plantillas. No se acredita entrega real de SMS o WhatsApp.
 
-`GET /api/estudiante/eleccion-tutor` devuelve los periodos propios, el tutor ya asignado y, cuando no hay asignación, una página de tutores disponibles. Acepta `periodoId`, `pagina`, `tamano` y `busqueda`. `POST /api/estudiante/eleccion-tutor` recibe únicamente `tutorId` y `periodoId`; el estudiante y el autor se obtienen de la sesión.
+La configuración está en [backend/.env.example](backend/.env.example). Mantener `SMS_HABILITADO=false` y `WHATSAPP_HABILITADO=false` mientras los proveedores no estén habilitados. La clave SMTP de Brevo no sirve para estas integraciones.
 
-La elección crea una fila activa en `asignaciones_tutor`, reutilizando la misma tabla y el bloqueo del estudiante que utiliza coordinación. Se impide otra asignación activa en ese periodo, incluso si la anterior fue creada por coordinación. El estudiante no cambia ni cancela una asignación existente desde esta opción. No se añadieron tablas ni migraciones. La elección aparece en Asignaciones de coordinación y en Mis tutorados del tutor.
+## API REST
 
-Este avance cubre únicamente la inscripción con tutor. La reserva de sesiones, la agenda y las demás secciones de Mis tutorías se conectarán en los siguientes avances. No se añadieron archivos Bruno. Se comprobaron diez casos nuevos del backend y diez comprobaciones de navegador con una inscripción real sobre cuentas temporales eliminadas al finalizar.
+URL base: `https://situa.oaxacoders.tech/api`.
 
-## Solicitud y atención de sesiones
+Las peticiones protegidas deben incluir:
 
-Mi agenda del estudiante ya consulta las sesiones del mes, permite navegar meses y muestra próximas sesiones reales. Solicitar tutoría pide periodo y tutor asignado, tema, horario disponible y un mensaje opcional. Los horarios, fechas, modalidad y ubicación proceden de `disponibilidades_tutor`; el estudiante no puede cambiarlos al reservar. Mis tutorías consulta sesiones, estados e historial de cambios reales.
+```http
+Authorization: Bearer <token>
+```
 
-En Horarios del tutor se añadieron las solicitudes y sesiones propias, con filtro de estado y paginación del servidor. El tutor confirma, rechaza o cancela desde esa sección; el estudiante cancela desde Mi agenda o Mis tutorías. Se solicita confirmación antes de cambiar el estado. Las cancelaciones se permiten antes del inicio, tanto en solicitudes como en sesiones confirmadas. Confirmar o rechazar requiere una solicitud futura. Las sesiones ya iniciadas o finalizadas no se modifican con estas acciones. El cierre y registro de tutorías realizadas corresponden al siguiente avance.
+| Método | Ruta relativa | Función |
+| --- | --- | --- |
+| POST | `/autenticacion/registrar` | Registrar una cuenta de estudiante. |
+| POST | `/autenticacion/iniciar-sesion` | Obtener un JWT. |
+| GET | `/autenticacion/sesion` | Consultar la cuenta autenticada. |
+| POST | `/autenticacion/cerrar-sesion` | Invalidar el JWT actual. |
+| POST | `/autenticacion/google` | Ingresar mediante Google. |
+| POST | `/autenticacion/recuperacion/solicitar` | Solicitar un código por correo. |
+| POST | `/autenticacion/recuperacion/cambiar-contrasena` | Cambiar la contraseña con el código. |
 
-Las rutas del estudiante son `GET /api/estudiante/sesiones`, `/agenda`, `/resumen`, `/opciones` y `/disponibles`, `POST /api/estudiante/sesiones` y `PATCH /api/estudiante/sesiones/{id}/cancelar`. Las rutas del tutor son `GET /api/tutor/sesiones` y `PATCH /api/tutor/sesiones/{id}/{accion}`, donde la acción es confirmar, rechazar o cancelar. Las consultas de listas aceptan estado y paginación. La agenda requiere límites de fecha UTC y permite intervalos de hasta dos meses. La búsqueda de disponibilidad y la selección de próximas sesiones se realizan en el servidor. Las fechas se presentan en la zona local del navegador.
+Los módulos se agrupan bajo `/coordinacion`, `/tutor` y `/estudiante`. La colección Bruno contiene los cuerpos, parámetros, permisos y resultados esperados de los recorridos de prueba.
 
-La identidad sale del JWT y se vuelve a consultar la cuenta activa. Para solicitar o confirmar se comprueban la asignación, el periodo y la inscripción académica activa, además de la cuenta del tutor. El servidor reserva el intervalo completo del horario, comprueba cruces tanto del tutor como del estudiante y conserva un historial en `sesion_cambios`. La solicitud ocupa el horario mientras se responde. Rechazar o cancelar libera la reserva sin borrar la sesión. Se reutilizan las tablas existentes y no hay migraciones nuevas.
+## Pruebas
 
-Para evitar reservas simultáneas se bloquean estudiante, tutor y horario, siempre en el mismo orden, y se mantiene el índice único de reserva vigente de MySQL. Las lecturas de cuentas se acotan por identificador para no bloquear a otros estudiantes. La edición y eliminación de horarios usa el mismo bloqueo del tutor y conserva los horarios que ya tienen sesiones asociadas.
+### Bruno
 
-Verificación: diecinueve pruebas de reservas y transiciones, una prueba con dos transacciones simultáneas y trece comprobaciones de navegador con cuentas temporales. Se comprobó solicitud, confirmación, cancelación, rechazo, persistencia y competencia por un mismo horario. Los registros temporales se revirtieron o eliminaron al finalizar. No se añadieron archivos Bruno ni se enviaron correos.
+Abrir la carpeta [bruno](bruno) desde la opción Abrir colección de Bruno. Utiliza el formato OpenCollection YAML y apunta a la API publicada. Ejecutar las solicitudes en su orden numérico: los primeros logins obtienen los JWT y preparan las variables de los pasos posteriores. Los tokens se guardan solo durante la ejecución.
 
-## Registro y cierre de tutorías
+Desde la carpeta `bruno` también se puede ejecutar:
 
-Mis tutorados y Sesiones realizadas comparten un formulario conectado al servidor. El tutor selecciona un estudiante y periodo propios, fecha, inicio, fin, tema, lugar y observaciones. Se registra una sesión completada con horario real, duración calculada y autor obtenido de la sesión. El periodo y la inscripción deben estar activos y la asignación debe pertenecer al tutor. No se permiten fechas futuras, intervalos inválidos ni cruces con sesiones ya existentes. Las sesiones programadas que ocupan ese horario se cierran desde Horarios, sin crear otra sesión.
+```sh
+npx --yes --package @usebruno/cli@4.3.0 bru run
+```
 
-En Horarios, una sesión confirmada que ya comenzó muestra Registrar resultado. El tutor puede marcarla como completada con inicio y fin reales y observaciones, o como no asistió. El cierre conserva la fecha programada y el historial de cambios, se permite una sola vez y no requiere que siga activa la asignación original. No asistió no suma horas. Las observaciones se guardan también en el seguimiento del estudiante, vinculadas a la sesión y a su autor.
+La colección contiene **79 solicitudes y 119 comprobaciones**: acceso de los tres roles, registro, permisos, errores previstos, paginación, filtros, PDF, operaciones sobre horarios, recordatorios y avisos, y rechazo del JWT después de cerrar sesión.
 
-Las rutas son `GET /api/tutor/sesiones-realizadas`, `GET /api/tutor/sesiones-realizadas/opciones`, `POST /api/tutor/sesiones-realizadas` y `PATCH /api/tutor/sesiones-realizadas/{id}/cerrar`. El historial tiene búsqueda por estudiante o tema, estado, fechas y paginación del servidor. Las tarjetas de total, completadas, canceladas y horas se calculan en el servidor sobre el historial propio. Mis tutorías del estudiante recibe el estado final, observaciones y duración real.
+Las pruebas crean datos identificados como Bruno. El recorrido elimina el horario y el recordatorio y retira el aviso. La cuenta registrada y el aviso retirado requieren limpieza administrativa si no se desean conservar: no existen endpoints de borrado para esos registros. La colección no envía correos, SMS ni WhatsApp, ni modifica contraseñas existentes.
 
-## Reportes del tutor
+### Backend
 
-Reportes y análisis usa datos reales. Generar reporte crea un reporte propio para un estudiante y periodo, con motivo activo, fecha, contenido, estado y una sesión completada opcional. Un reporte puede guardarse pendiente y completarse posteriormente en el mismo registro. La cuenta del tutor completa su propio reporte y los metadatos de cierre se asignan en el servidor. Un reporte vinculado a una sesión completada propia puede conservarse aunque la asignación académica ya haya finalizado. No se permiten sesiones de otra persona ni cambios de autor recibidos desde el navegador.
+Desde `backend`:
 
-Las rutas son `GET/POST /api/tutor/reportes`, `GET /api/tutor/reportes/analisis`, `GET /api/tutor/reportes/motivos`, `GET /api/tutor/reportes/sesiones`, `PATCH /api/tutor/reportes/{id}/completar`, `GET /api/tutor/reportes/{id}/pdf` y `GET /api/tutor/reportes/exportar/pdf`. Los filtros y la paginación de la lista se ejecutan en el servidor. El PDF individual y el conjunto filtrado reutilizan el generador existente y se restringen al tutor conectado. Coordinación recibe los reportes sin un proceso adicional de migración o copia.
+```powershell
+.\mvnw.cmd test
+```
 
-Las gráficas académicas usan mediciones de los estudiantes actualmente asignados al tutor, tomando el periodo activo más reciente de cada uno. El rendimiento muestra seis meses con la última medición disponible de cada estudiante en cada mes; los meses sin datos quedan vacíos, sin inventar ceros. Progreso compara la primera medición disponible con la última del expediente y muestra hasta diez estudiantes. El promedio conserva los ceros reales y excluye ausencias. Estudiantes atendidos cuenta personas con sesiones completadas; asistencia se calcula sobre completadas y no asistió. Las tarjetas que antes mostraban aprobación y satisfacción ficticias ahora presentan reportes completados y asistencia reales.
+Las pruebas de integración requieren la conexión MySQL configurada y crean registros temporales. Ejecutarlas en una base de pruebas, separada de producción.
 
-Se reutilizan sesiones, observaciones, cambios de sesión y reportes, sin nuevas tablas ni migraciones. Se conservaron las distribuciones de las pantallas y se añadieron solo los campos necesarios para registrar la duración y los reportes. No se añadieron archivos Bruno ni se enviaron correos. Verificación de este avance: veintidós pruebas nuevas del backend y dieciséis comprobaciones de navegador con cuentas temporales eliminadas al finalizar, incluyendo persistencia, seguimiento desde estudiante, PDF y lectura desde coordinación.
+### Compilación del frontend
 
-## Inicio del estudiante y del tutor
+Desde `frontend`:
 
-`GET /api/estudiante/inicio` entrega la próxima sesión solicitada o confirmada futura, las próximas sesiones virtuales y las actividades personales pendientes, separadas en talleres y recordatorios. Se consultan únicamente los datos de la cuenta conectada. Las sesiones canceladas, rechazadas o finalizadas no aparecen como próximas. El estudiante puede solicitar una tutoría desde el acceso existente a sesiones virtuales y cancelar con las mismas reglas de la agenda.
+```sh
+npm run build
+```
 
-Los talleres y recordatorios se guardan en `actividades_personales` mediante `POST /api/estudiante/actividades`, `PUT /api/estudiante/actividades/{id}` y `DELETE /api/estudiante/actividades/{id}`. El propietario se obtiene del JWT. Se conserva una fecha de calendario para actividades sin horario o un intervalo UTC para actividades con inicio y fin; no se aceptan ambas formas simultáneamente ni intervalos invertidos. Los talleres requieren fecha. Las actividades de otra cuenta no se pueden consultar, editar ni eliminar.
+El resultado se genera en `frontend/dist`.
 
-`GET /api/tutor/inicio` devuelve los indicadores calculados por el servidor, hasta cinco estudiantes asignados y las próximas cinco sesiones. Los estudiantes se cuentan una sola vez aunque tengan más de un periodo activo con el mismo tutor; la vista muestra el expediente del periodo activo más reciente. Las cuentas y las inscripciones deben estar activas. Tutorías realizadas cuenta sesiones completadas propias, reportes pendientes cuenta reportes pendientes propios y sesiones programadas cuenta solicitudes y confirmaciones futuras. Ver todos abre Mis tutorados y Ver todas abre Horarios.
+## Despliegue
 
-## Avisos recibidos por el estudiante
+El frontend se sirve como archivos estáticos y el backend se ejecuta como JAR mediante systemd. Nginx publica ambos bajo el mismo dominio y redirige HTTP a HTTPS.
 
-`GET /api/estudiante/avisos` devuelve una página de avisos propios con conteos globales de registros y no leídos. `PATCH /api/estudiante/avisos/{id}/leer` marca un aviso y `PATCH /api/estudiante/avisos/leer-todos` marca todos los visibles del usuario, incluso los de otras páginas. La lectura conserva su primera fecha y no modifica la de otros destinatarios. Se reutiliza la vista de avisos visibles, que excluye retirados y ocultados. La cuenta debe seguir activa y tener perfil y rol de estudiante.
+| Componente | Ruta o servicio del VPS |
+| --- | --- |
+| Backend | `/opt/situa/actual/aplicacion.jar` |
+| Frontend | `/opt/situa/actual/frontend` |
+| Servicio de la API | `situa-backend.service`, en `127.0.0.1:8095` |
+| MySQL de SITUA | `situa-mysql.service`, en `127.0.0.1:3307` |
+| Configuración privada | `/etc/situa/.env` |
+| Nginx | `/etc/nginx/sites-available/situa.oaxacoders.tech` |
+| Renovación HTTPS | `situa-certificado.timer` |
 
-Se conservaron los colores y la distribución de las pantallas. Se añadieron los controles necesarios para guardar lecturas, navegar páginas y registrar fecha y horario de actividades. No hay tablas, migraciones ni archivos Bruno nuevos. No se implementó mensajería ni WebSocket en este avance. Verificación: dieciséis pruebas nuevas del backend y veintiuna comprobaciones de navegador con sesiones reales, actividades persistidas, publicación desde coordinación, aislamiento entre destinatarios y conservación de lecturas al recargar. Los registros temporales se revirtieron o eliminaron al finalizar.
+Los servicios y la base de SITUA son independientes de los demás proyectos del servidor. Las configuraciones de referencia están en [backend/despliegue](backend/despliegue) y [backend/.env.vps.example](backend/.env.vps.example).
 
-## Vencimiento de solicitudes de tutoría
+Para generar el JAR, desde `backend`:
 
-La migración V5 añade el estado `vencida` a las sesiones y el cambio automático `vencimiento` al historial. El actor de este cambio queda vacío porque lo realiza el sistema.
+```powershell
+.\mvnw.cmd clean package
+```
 
-El backend revisa cada 30 segundos hasta 100 solicitudes pendientes cuya hora de inicio ya llegó. También actualiza las solicitudes propias al consultar las sesiones, la agenda o el resumen del estudiante. Solo cambia solicitudes sin respuesta; las confirmadas conservan su estado y permiten registrar su resultado. La actualización y el historial se guardan juntos, sin duplicar el cambio al repetir una consulta.
+El archivo se genera en `backend/target/backend-0.0.1-SNAPSHOT.jar`.
 
-Estudiante y tutor pueden consultar y filtrar el estado Vencida con los controles existentes. Una solicitud vencida conserva sus datos y no ofrece acciones de confirmación, cancelación ni registro de resultado. Los compañeros reciben el cambio de base de datos al iniciar el backend con Flyway; no deben editar las migraciones anteriores.
+Comandos de operación en el VPS:
+
+```sh
+sudo systemctl status situa-backend situa-mysql --no-pager
+sudo journalctl -u situa-backend -n 80 --no-pager
+sudo systemctl restart situa-backend
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+## Seguridad
+
+- Contraseñas protegidas con BCrypt y validación en frontend y backend.
+- JWT con vencimiento, control de roles e invalidación al cerrar sesión.
+- Acceso a datos personales limitado al usuario o rol autorizado.
+- Validación de entradas y errores JSON con estados HTTP adecuados.
+- Variables privadas fuera del repositorio; los archivos `.env` reales no se versionan.
+- HTTPS en producción y servicios internos limitados a la interfaz local del VPS.
+- Las variables `VITE_` son públicas: no deben contener claves privadas.
+
+## Estado de la entrega
+
+| Componente | Estado |
+| --- | --- |
+| Aplicación y API en VPS con HTTPS | Disponible. |
+| Flujos de coordinación, tutor y estudiante | Integrados con la API y MySQL. |
+| Recuperación por correo con Brevo | Operativa; recepción en bandeja comprobada. |
+| Acceso con Google | Integrado; requiere configuración OAuth válida para el entorno. |
+| SMS y WhatsApp | Desactivados; pendientes de habilitación y entrega real. |
+| Figma, GitHub Projects y datos del equipo | Apartados preparados para completar. |
+
+El correo activo mediante Brevo utiliza un proveedor externo. Si la evaluación exige entrega directa con Postfix, debe validarse esa diferencia con el docente.

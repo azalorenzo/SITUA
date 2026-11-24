@@ -1,0 +1,23 @@
+info:
+  name: "Validar paginación de estudiantes"
+  type: "http"
+  seq: 31
+http:
+  method: "GET"
+  url: "https://situa.oaxacoders.tech/api/coordinacion/estudiantes?pagina=0&tamano=5"
+  auth:
+    type: "bearer"
+    token: "{{token_coordinacion}}"
+runtime:
+  scripts:
+    - type: "tests"
+      code: |-
+        test("Responde HTTP 422", function () {
+          expect(res.status).to.equal(422);
+        });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

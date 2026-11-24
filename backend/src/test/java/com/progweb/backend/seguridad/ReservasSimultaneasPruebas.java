@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.*;
 class ReservasSimultaneasPruebas {
     @Autowired JdbcTemplate consultas;
     @Autowired ServicioSesionesAgenda servicio;
+    @Autowired com.progweb.backend.servicios.ServicioMensajesTutor mensajes;
     final List<Long> usuarios=new ArrayList<>(),estudiantes=new ArrayList<>();
     Long departamento,carrera,periodo,tutor,horario;
     final String marca=UUID.randomUUID().toString().substring(0,8);
@@ -56,7 +57,31 @@ class ReservasSimultaneasPruebas {
         }
         assertThat(consultas.queryForObject("SELECT COUNT(*) FROM sesiones WHERE disponibilidad_id=? AND estado='solicitada'",Long.class,horario)).isEqualTo(1);
     }
+    @Test void ambasPersonasVenLaConversacionEnLaPrimeraConsultaSimultanea() throws Exception {
+        for(int repeticion=0;repeticion<5;repeticion++) {
+            limpiarConversaciones();
+            var preparados=new CountDownLatch(2);var salida=new CountDownLatch(1);
+            try(var ejecutor=Executors.newFixedThreadPool(2)) {
+                var delTutor=ejecutor.submit(()->{preparados.countDown();if(!salida.await(10,TimeUnit.SECONDS))throw new IllegalStateException();return mensajes.conversaciones(String.valueOf(usuarios.get(0)),true,"");});
+                var delEstudiante=ejecutor.submit(()->{preparados.countDown();if(!salida.await(10,TimeUnit.SECONDS))throw new IllegalStateException();return mensajes.conversaciones(String.valueOf(usuarios.get(1)),false,"");});
+                assertThat(preparados.await(10,TimeUnit.SECONDS)).isTrue();salida.countDown();
+                var tutorados=delTutor.get(20,TimeUnit.SECONDS);var estudiante=delEstudiante.get(20,TimeUnit.SECONDS);
+                assertThat(estudiante).hasSize(1);
+                assertThat(tutorados).extracting(fila->fila.id()).contains(estudiante.getFirst().id());
+                assertThat(consultas.queryForObject("SELECT COUNT(*) FROM conversaciones WHERE usuario_menor_id=? AND usuario_mayor_id=?",Long.class,
+                        Math.min(usuarios.get(0),usuarios.get(1)),Math.max(usuarios.get(0),usuarios.get(1)))).isEqualTo(1);
+            }
+        }
+    }
+    void limpiarConversaciones() {
+        for(long usuario:usuarios) for(long conversacion:consultas.queryForList("SELECT conversacion_id FROM conversacion_participantes WHERE usuario_id=?",Long.class,usuario)) {
+            consultas.update("DELETE FROM mensajes WHERE conversacion_id=?",conversacion);
+            consultas.update("DELETE FROM conversacion_participantes WHERE conversacion_id=?",conversacion);
+            consultas.update("DELETE FROM conversaciones WHERE id=?",conversacion);
+        }
+    }
     @AfterEach void limpiar() {
+        limpiarConversaciones();
         // Solo retiramos los registros que creó esta prueba, después de terminar ambas solicitudes.
         if(horario!=null){consultas.update("DELETE c FROM sesion_cambios c JOIN sesiones s ON s.id=c.sesion_id WHERE s.disponibilidad_id=?",horario);consultas.update("DELETE FROM sesiones WHERE disponibilidad_id=?",horario);consultas.update("DELETE FROM disponibilidades_tutor WHERE id=?",horario);}
         for(long estudiante:estudiantes){consultas.update("DELETE FROM asignaciones_tutor WHERE estudiante_id=?",estudiante);consultas.update("DELETE FROM situaciones_academicas WHERE estudiante_id=?",estudiante);consultas.update("DELETE FROM estudiantes WHERE id=?",estudiante);}

@@ -43,7 +43,8 @@ public class RepositorioEstudiantesTutor {
         return consultas.queryForList("SELECT id FROM tutores WHERE usuario_id=?", Long.class, usuarioId).stream().findFirst();
     }
 
-    public List<RespuestaEstudianteTutor> listar(long tutorId, String busqueda, String riesgo) {
+    private record Consulta(String sql,java.util.ArrayList<Object> parametros) { }
+    private Consulta preparar(long tutorId,String busqueda,String riesgo) {
         var parametros = new java.util.ArrayList<Object>();
         parametros.add(tutorId);
         String condiciones = "";
@@ -58,7 +59,19 @@ public class RepositorioEstudiantesTutor {
             condiciones += " AND x.nivel_riesgo = ?";
             parametros.add(riesgo);
         }
-        return consultas.query(SELECCION + condiciones + " ORDER BY x.nombre, a.estudiante_id", convertir, parametros.toArray());
+        return new Consulta(SELECCION+condiciones,parametros);
+    }
+    public List<RespuestaEstudianteTutor> listar(long tutorId,String busqueda,String riesgo){
+        var consulta=preparar(tutorId,busqueda,riesgo);
+        return consultas.query(consulta.sql()+" ORDER BY x.nombre,a.estudiante_id,a.periodo_id",convertir,consulta.parametros().toArray());
+    }
+    public long contar(long tutorId,String busqueda,String riesgo){
+        var consulta=preparar(tutorId,busqueda,riesgo);
+        return consultas.queryForObject("SELECT COUNT(*) FROM ("+consulta.sql()+") alumnos",Long.class,consulta.parametros().toArray());
+    }
+    public List<RespuestaEstudianteTutor> listarPagina(long tutorId,String busqueda,String riesgo,int tamano,long desplazamiento){
+        var consulta=preparar(tutorId,busqueda,riesgo);consulta.parametros().add(tamano);consulta.parametros().add(desplazamiento);
+        return consultas.query(consulta.sql()+" ORDER BY x.nombre,a.estudiante_id,a.periodo_id LIMIT ? OFFSET ?",convertir,consulta.parametros().toArray());
     }
 
     public Optional<RespuestaEstudianteTutor> buscar(long tutorId, long estudianteId) {

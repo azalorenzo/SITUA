@@ -1,0 +1,31 @@
+info:
+  name: "Validar teléfono del estudiante"
+  type: "http"
+  seq: 58
+http:
+  method: "PUT"
+  url: "https://situa.oaxacoders.tech/api/estudiante/contacto"
+  body:
+    type: "json"
+    data: |-
+      {
+        "telefono": "5512345678",
+        "aceptaSms": true,
+        "aceptaWhatsapp": false
+      }
+  auth:
+    type: "bearer"
+    token: "{{token_estudiante}}"
+runtime:
+  scripts:
+    - type: "tests"
+      code: |-
+        test("Responde HTTP 422", function () {
+          expect(res.status).to.equal(422);
+        });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

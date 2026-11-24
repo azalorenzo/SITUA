@@ -1,0 +1,24 @@
+info:
+  name: "Consultar aviso creado"
+  type: "http"
+  seq: 64
+http:
+  method: "GET"
+  url: "https://situa.oaxacoders.tech/api/coordinacion/avisos/{{aviso_prueba}}"
+  auth:
+    type: "bearer"
+    token: "{{token_coordinacion}}"
+runtime:
+  scripts:
+    - type: "tests"
+      code: |-
+        test("Responde HTTP 200", function () {
+          expect(res.status).to.equal(200);
+        });
+        test("Coincide con el aviso creado", function () { expect(res.body.aviso.titulo).to.equal(bru.getVar("titulo_aviso")); });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

@@ -1,0 +1,22 @@
+[Unit]
+Description=MySQL exclusivo de SITUA
+After=network.target
+[Service]
+Type=simple
+User=situa-mysql
+Group=situa-mysql
+RuntimeDirectory=situa-mysql
+RuntimeDirectoryMode=0750
+ExecStart=/opt/situa/motor/bin/mysqld --defaults-file=/etc/situa/mysql.cnf
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=120
+MemoryHigh=384M
+MemoryMax=512M
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/situa-mysql /run/situa-mysql /var/log/situa/mysql
+[Install]
+WantedBy=multi-user.target

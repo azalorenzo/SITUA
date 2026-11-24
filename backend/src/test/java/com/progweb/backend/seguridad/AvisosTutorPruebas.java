@@ -171,4 +171,41 @@ class AvisosTutorPruebas {
         cliente.perform(get("/api/tutor/avisos").header("Authorization", autorizacionCoordinador)).andExpect(status().isForbidden());
         cliente.perform(patch("/api/tutor/avisos/leer-todos").header("Authorization", autorizacionCoordinador)).andExpect(status().isForbidden());
     }
+    @Test void paginaAvisosVisiblesSinCambiarElTotalNoLeido() throws Exception {
+        cliente.perform(get("/api/tutor/avisos/pagina").param("tamano","1").param("pagina","2").header("Authorization",autorizacionTutor))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.totalRegistros").value(3)).andExpect(jsonPath("$.totalPaginas").value(3))
+                .andExpect(jsonPath("$.contenido.length()").value(1)).andExpect(jsonPath("$.contenido[0].id").value(importante))
+                .andExpect(jsonPath("$.noLeidos").value(2));
+    }
+    @Test void filtraAvisosPorLecturaPrioridadYBusquedaEnServidor() throws Exception {
+        cliente.perform(get("/api/tutor/avisos/pagina").param("lectura","no_leidos").param("prioridad","alta").param("busqueda","importante").header("Authorization",autorizacionTutor))
+                .andExpect(jsonPath("$.totalRegistros").value(1)).andExpect(jsonPath("$.contenido[0].id").value(importante));
+        cliente.perform(get("/api/tutor/avisos/pagina").param("lectura","leidos").header("Authorization",autorizacionTutor))
+                .andExpect(jsonPath("$.totalRegistros").value(1)).andExpect(jsonPath("$.contenido[0].id").value(medio));
+        cliente.perform(get("/api/tutor/avisos/pagina").param("busqueda","%").header("Authorization",autorizacionTutor)).andExpect(jsonPath("$.totalRegistros").value(0));
+    }
+    @Test void laPaginaRechazaFiltrosInvalidosYRolesAjenos() throws Exception {
+        for(String parametro:List.of("pagina=-1","tamano=101","lectura=otra","prioridad=urgente"))cliente.perform(get("/api/tutor/avisos/pagina?"+parametro).header("Authorization",autorizacionTutor)).andExpect(status().isUnprocessableContent());
+        cliente.perform(get("/api/tutor/avisos/pagina").header("Authorization",autorizacionEstudiante)).andExpect(status().isForbidden());
+    }
+
+    @Test void soloElTutorDeUnaSolicitudFuturaPuedeResponderDesdeElAviso() throws Exception {
+        long departamento=insertar("INSERT INTO departamentos(nombre) VALUES ('Avisos con sesión')");
+        long carrera=insertar("INSERT INTO carreras(departamento_id,clave,nombre) VALUES (?,'AV-SES','Avisos')",departamento);
+        long periodo=insertar("INSERT INTO periodos_academicos(clave,nombre,fecha_inicio,fecha_fin,estado) VALUES ('AV-SES','Avisos','2000-01-01','2099-12-31','activo')");
+        long tutor=insertar("INSERT INTO tutores(usuario_id,departamento_id) VALUES (?,?)",usuarioTutor,departamento);
+        long alumno=crearUsuario("avisos-alumno-sesion","estudiante");
+        long estudiante=insertar("INSERT INTO estudiantes(usuario_id,matricula) VALUES (?,'AV-SES')",alumno);
+        insertar("INSERT INTO situaciones_academicas(estudiante_id,periodo_id,carrera_id,semestre) VALUES (?,?,?,1)",estudiante,periodo,carrera);
+        long sesion=insertar("INSERT INTO sesiones(tutor_id,estudiante_id,periodo_id,tema,inicio_en,fin_en,modalidad,ubicacion,creado_por) VALUES (?,?,?,'Prueba',UTC_TIMESTAMP()+INTERVAL 2 DAY,UTC_TIMESTAMP()+INTERVAL 2 DAY+INTERVAL 1 HOUR,'presencial','Aula',?)",tutor,estudiante,periodo,alumno);
+        consultas.update("UPDATE avisos SET sesion_id=? WHERE id=?",sesion,antiguo);
+        leer(antiguo).andExpect(jsonPath("$.puedeResponderSesion").value(true));
+        cliente.perform(patch("/api/tutor/avisos/"+antiguo+"/leer").header("Authorization",token(usuarioOtroTutor,"tutor")))
+                .andExpect(jsonPath("$.puedeResponderSesion").value(false));
+        consultas.update("UPDATE sesiones SET estado='confirmada' WHERE id=?",sesion);
+        leer(antiguo).andExpect(jsonPath("$.puedeResponderSesion").value(false));
+        consultas.update("UPDATE sesiones SET estado='solicitada',inicio_en=UTC_TIMESTAMP()-INTERVAL 2 HOUR,fin_en=UTC_TIMESTAMP()-INTERVAL 1 HOUR WHERE id=?",sesion);
+        leer(antiguo).andExpect(jsonPath("$.puedeResponderSesion").value(false));
+    }
+
 }

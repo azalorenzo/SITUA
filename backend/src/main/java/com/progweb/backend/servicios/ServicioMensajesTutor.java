@@ -28,10 +28,10 @@ public class ServicioMensajesTutor {
         this.reloj = reloj;
     }
 
-    private long usuarioTutor(String identificador) {
+    private long identificar(String identificador, boolean esTutor) {
         var usuario = autenticacion.consultarSesion(identificador);
-        if (!usuario.roles().contains("tutor")) {
-            throw new AccesoRechazado(403, "Esta operación requiere una cuenta de tutor.");
+        if (!usuario.roles().contains(esTutor?"tutor":"estudiante")) {
+            throw new AccesoRechazado(403, "No tienes acceso a esta opción.");
         }
         return usuario.id();
     }
@@ -43,30 +43,51 @@ public class ServicioMensajesTutor {
         }
     }
 
+    @Transactional(isolation=org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public List<RespuestaConversacionTutor> conversaciones(String identificador) {
-        return mensajes.conversaciones(usuarioTutor(identificador), MAXIMO_CONVERSACIONES);
+        return conversaciones(identificador,true,"");
+    }
+
+    @Transactional(isolation=org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
+    public List<RespuestaConversacionTutor> conversaciones(String identificador, boolean esTutor, String busqueda) {
+        long usuario=identificar(identificador,esTutor);
+        String texto=busqueda.strip();
+        if(texto.length()>200) throw new AccesoRechazado(422,"La búsqueda es demasiado larga.");
+        for(long contacto:mensajes.contactosAsignados(usuario,esTutor)) mensajes.asegurarConversacion(usuario,contacto);
+        return mensajes.conversaciones(usuario,MAXIMO_CONVERSACIONES,texto);
     }
 
     public List<RespuestaMensajeTutor> consultar(String identificador, long conversacion) {
-        long usuario = usuarioTutor(identificador);
-        verificarParticipante(usuario, conversacion);
-        return mensajes.mensajes(usuario, conversacion, MAXIMO_MENSAJES);
+        return consultar(identificador,true,conversacion);
+    }
+    public List<RespuestaMensajeTutor> consultar(String identificador, boolean esTutor, long conversacion) {
+        long usuario=identificar(identificador,esTutor);
+        verificarParticipante(usuario,conversacion);
+        return mensajes.mensajes(usuario,conversacion,MAXIMO_MENSAJES);
     }
 
     @Transactional
     public RespuestaConversacionLeida marcarLeida(String identificador, long conversacion) {
-        long usuario = usuarioTutor(identificador);
-        verificarParticipante(usuario, conversacion);
-        mensajes.marcarLeida(usuario, conversacion);
+        return marcarLeida(identificador,true,conversacion,null);
+    }
+    @Transactional
+    public RespuestaConversacionLeida marcarLeida(String identificador, boolean esTutor, long conversacion, Long ultimoMensajeId) {
+        long usuario=identificar(identificador,esTutor);
+        verificarParticipante(usuario,conversacion);
+        if(!mensajes.marcarLeida(usuario,conversacion,ultimoMensajeId)) throw new AccesoRechazado(404,"No se encontró el mensaje.");
         return new RespuestaConversacionLeida(conversacion);
     }
 
     @Transactional
     public RespuestaMensajeTutor enviar(String identificador, long conversacion, String contenido) {
-        long usuario = usuarioTutor(identificador);
-        verificarParticipante(usuario, conversacion);
-        LocalDateTime ahora = LocalDateTime.now(reloj);
-        long id = mensajes.insertarMensaje(usuario, conversacion, contenido.strip(), ahora);
-        return new RespuestaMensajeTutor(id, contenido.strip(), ahora, true);
+        return enviar(identificador,true,conversacion,contenido);
+    }
+    @Transactional
+    public RespuestaMensajeTutor enviar(String identificador, boolean esTutor, long conversacion, String contenido) {
+        long usuario=identificar(identificador,esTutor);
+        verificarParticipante(usuario,conversacion);
+        LocalDateTime ahora=LocalDateTime.ofInstant(reloj.instant(),java.time.ZoneOffset.UTC);
+        long id=mensajes.insertarMensaje(usuario,conversacion,contenido.strip(),ahora);
+        return new RespuestaMensajeTutor(id,contenido.strip(),ahora,true);
     }
 }

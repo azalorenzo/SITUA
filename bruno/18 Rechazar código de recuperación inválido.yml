@@ -1,0 +1,30 @@
+info:
+  name: "Rechazar código de recuperación inválido"
+  type: "http"
+  seq: 18
+http:
+  method: "POST"
+  url: "https://situa.oaxacoders.tech/api/autenticacion/recuperacion/cambiar-contrasena"
+  body:
+    type: "json"
+    data: |-
+      {
+        "correo": "{{correo_prueba}}",
+        "codigo": "000000",
+        "contrasena": "OtraClavePrueba!2026",
+        "confirmacion": "OtraClavePrueba!2026"
+      }
+  auth: "inherit"
+runtime:
+  scripts:
+    - type: "tests"
+      code: |-
+        test("Responde HTTP 422", function () {
+          expect(res.status).to.equal(422);
+        });
+settings:
+  encodeUrl: true
+  timeout: 30000
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

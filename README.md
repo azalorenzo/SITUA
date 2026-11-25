@@ -36,7 +36,6 @@ El acceso utiliza JWT y permisos por rol. Los listados paginados y filtros se re
 
 El menú de usuario incluye Perfil para editar los datos personales. Los estudiantes pueden actualizar matrícula, carrera y semestre del periodo vigente y sus preferencias de contacto; los tutores pueden cambiar su departamento. El correo puede cambiarse si la cuenta no está vinculada con Google. La vinculación se comprueba en la base de datos y también se protege desde la API. El rol no se modifica desde esta opción.
 
-
 ### Administración de coordinación
 
 Usuarios permite crear y editar cuentas de los tres roles, asignar matrícula o departamento y activar o desactivar el acceso. Los cambios de permisos, correo, contraseña o estado invalidan las sesiones anteriores. No se puede retirar el acceso propio a coordinación ni dejar el sistema sin una cuenta de coordinación activa. Una cuenta con asignaciones o sesiones pendientes debe resolverlas antes de cambiar de rol.
@@ -49,7 +48,7 @@ Estudiantes permite editar la matrícula y los datos académicos por periodo: ca
 
 Reportes permite crear, consultar, editar, completar, reabrir y eliminar reportes desde coordinación. La eliminación requiere confirmación; las exportaciones PDF continúan disponibles. Los participantes de un reporte existente se conservan.
 
-Las tres vistas usan paginación, búsqueda y filtros del servidor, bajo `/api/coordinacion/administracion`. No requieren nuevas migraciones.
+Las funciones de administración utilizan los endpoints de `/api/coordinacion/administracion`, con paginación, búsqueda y filtros del servidor.
 
 ## Tecnologías
 
@@ -111,7 +110,7 @@ BD_NOMBRE=tutoria
 BD_USUARIO=tu_usuario_mysql
 BD_CONTRASENA=tu_contrasena_mysql
 JWT_CLAVE=tu_clave_aleatoria_en_base64
-JWT_MINUTOS_VIGENCIA=15
+JWT_MINUTOS_VIGENCIA=1440
 ORIGENES_PERMITIDOS=http://localhost:5173,http://127.0.0.1:5173
 ```
 
@@ -146,7 +145,7 @@ Dentro del cliente:
 SOURCE database/seeds/001_datos_demo.sql;
 ```
 
-El seed incluye las cuentas de evaluación y los registros de demostración. No se carga automáticamente al iniciar Spring Boot y puede repetirse sin duplicar sus ejemplos.
+El seed incluye las cuentas de prueba y los datos de ejemplo. No se carga automáticamente al iniciar Spring Boot y puede repetirse sin duplicar sus ejemplos.
 
 ### Frontend
 
@@ -163,7 +162,7 @@ Abrir `http://localhost:5173`. Con `VITE_URL_API=/api`, Vite redirige las petici
 
 Si un archivo `.env` ya está configurado, conservarlo en lugar de reemplazarlo por el ejemplo.
 
-## Credenciales de evaluación
+## Cuentas de prueba
 
 | Rol | Correo | Contraseña |
 | --- | --- | --- |
@@ -171,7 +170,7 @@ Si un archivo `.env` ya está configurado, conservarlo en lugar de reemplazarlo 
 | Tutor | `tutor@demo.example` | `TutorDemo!2026` |
 | Estudiante | `estudiante@demo.example` | `AlumnoDemo!2026` |
 
-Coordinación es el perfil de administración disponible en la aplicación. Estas cuentas corresponden a los datos de demostración.
+La cuenta de coordinación tiene acceso a las funciones de administración.
 
 ## Base de datos y diagrama ER
 
@@ -237,7 +236,7 @@ Reiniciar el backend después de cambiar estas variables. Cada entorno necesita 
 
 Los botones de Mensajes permiten llamar entre estudiante y tutor con una asignación activa. La invitación aparece en cualquier sección de sus perfiles y vence después de 45 segundos sin respuesta. La sala privada se crea cuando el receptor acepta; admite dos personas y finaliza a los cinco minutos. Para llamadas de voz, los permisos de Daily impiden publicar video. No se habilitan grabaciones ni transcripciones.
 
-El navegador necesita permiso para micrófono y, en videollamadas, cámara. Fuera de localhost se requiere HTTPS. El límite de duración se controla en el servidor y en Daily; el consumo depende del plan contratado con el proveedor.
+El navegador necesita permiso para micrófono y, en videollamadas, cámara. Fuera de localhost se requiere HTTPS. La duración se controla en el servidor y en Daily.
 
 ### Recuperación de contraseña por correo
 
@@ -259,15 +258,13 @@ CORREO_STARTTLS=true
 
 El login y la clave SMTP se obtienen en Brevo; no son la contraseña de la cuenta ni una API key. El dominio y remitente deben estar autorizados en el proveedor. Las credenciales reales se guardan fuera de Git.
 
-El VPS también tiene Postfix y OpenDKIM. La entrega directa con Postfix depende de la habilitación SMTP de AWS; el envío activo de SITUA utiliza Brevo.
-
 ### Acceso con Google
 
 Configurar el mismo ID público de cliente OAuth web en `GOOGLE_CLIENTE_ID` del backend y `VITE_GOOGLE_CLIENTE_ID` del frontend. Autorizar en Google Cloud los orígenes locales y `https://situa.oaxacoders.tech`, según el entorno. Reiniciar el backend y recompilar el frontend después de cambiar estas variables.
 
 ### SMS
 
-Los estudiantes pueden registrar su teléfono internacional y autorizar cada canal desde Datos de contacto. El backend dispone de una cola de avisos asociada a la confirmación de tutorías y de una integración con Twilio.
+Los estudiantes pueden registrar su teléfono con código de país y activar las confirmaciones por SMS desde Datos de contacto. Al confirmar una tutoría, el backend prepara el aviso y lo envía mediante Twilio.
 
 La configuración está en [backend/.env.example](backend/.env.example). Para usar la plantilla precargada Event Notifications en una cuenta de prueba:
 
@@ -276,9 +273,9 @@ SMS_HABILITADO=true
 SMS_PLANTILLA_PRUEBA=sms_event_notifications
 ```
 
-Completar también `TWILIO_CUENTA`, `TWILIO_CLAVE` y `TWILIO_REMITENTE_SMS`. Este modo envía el texto de prueba de Twilio, sin los datos personalizados de la tutoría. Los destinatarios deben estar autorizados por la cuenta de prueba y el envío está sujeto a sus restricciones. La aceptación de la petición no acredita que el SMS haya llegado al teléfono.
+Completar también `TWILIO_CUENTA`, `TWILIO_CLAVE` y `TWILIO_REMITENTE_SMS`. La plantilla Event Notifications utiliza el texto precargado de Twilio. En una cuenta de prueba, los números destinatarios deben estar autorizados en Twilio.
 
-Para una cuenta que permita texto personalizado, dejar `SMS_PLANTILLA_PRUEBA` vacío. La clave SMTP de Brevo no sirve para estas integraciones.
+Para enviar el texto personalizado de la tutoría, dejar `SMS_PLANTILLA_PRUEBA` vacío y utilizar una cuenta de Twilio que permita este tipo de envío.
 
 ## API REST
 
@@ -318,7 +315,7 @@ npx --yes --package @usebruno/cli@4.3.0 bru run
 
 La colección contiene **79 solicitudes y 119 comprobaciones**: acceso de los tres roles, registro, permisos, errores previstos, paginación, filtros, PDF, operaciones sobre horarios, recordatorios y avisos, y rechazo del JWT después de cerrar sesión.
 
-Las pruebas crean datos identificados como Bruno. El recorrido elimina el horario y el recordatorio y retira el aviso. La cuenta registrada y el aviso retirado requieren limpieza administrativa si no se desean conservar: no existen endpoints de borrado para esos registros. La colección no envía correos, SMS, ni modifica contraseñas existentes.
+Las pruebas crean datos identificados como Bruno. El recorrido elimina el horario y el recordatorio y retira el aviso. La cuenta registrada y el aviso retirado requieren limpieza administrativa si no se desean conservar: no existen endpoints de borrado para esos registros. La colección no envía correos ni SMS, y no modifica contraseñas existentes.
 
 ### Backend
 
@@ -383,16 +380,3 @@ sudo systemctl reload nginx
 - Variables privadas fuera del repositorio; los archivos `.env` reales no se versionan.
 - HTTPS en producción y servicios internos limitados a la interfaz local del VPS.
 - Las variables `VITE_` son públicas: no deben contener claves privadas.
-
-## Estado de la entrega
-
-| Componente | Estado |
-| --- | --- |
-| Aplicación y API en VPS con HTTPS | Disponible. |
-| Flujos de coordinación, tutor y estudiante | Integrados con la API y MySQL. |
-| Recuperación por correo con Brevo | Operativa; recepción en bandeja comprobada. |
-| Acceso con Google | Integrado; requiere configuración OAuth válida para el entorno. |
-| SMS | SMS con plantilla de prueba Event Notifications; entrega pendiente de comprobación. |
-| Figma, GitHub Projects y datos del equipo | Apartados preparados para completar. |
-
-El correo activo mediante Brevo utiliza un proveedor externo. Si la evaluación exige entrega directa con Postfix, debe validarse esa diferencia con el docente.

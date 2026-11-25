@@ -64,6 +64,7 @@ export async function solicitarApi<T>(ruta: string, opciones: RequestInit = {}, 
   } catch {
     throw new ErrorSolicitud(0, 'No se pudo conectar con el servidor. Revisa tu conexión e intenta nuevamente.');
   }
+  if (respuesta.status === 204) return undefined as T;
   const contenido = await respuesta.json().catch(() => null);
   if (!respuesta.ok) {
     if (protegida && respuesta.status === 401) limpiarSesion();

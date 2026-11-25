@@ -1,0 +1,20 @@
+CREATE TABLE llamadas (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    conversacion_id BIGINT UNSIGNED NOT NULL,
+    iniciador_id BIGINT UNSIGNED NOT NULL,
+    receptor_id BIGINT UNSIGNED NOT NULL,
+    tipo ENUM('audio','video') NOT NULL,
+    estado ENUM('pendiente','activa','rechazada','cancelada','finalizada','sin_respuesta') NOT NULL DEFAULT 'pendiente',
+    sala VARCHAR(80) NULL,
+    direccion VARCHAR(255) NULL,
+    creada_en DATETIME(6) NOT NULL,
+    inicio_en DATETIME(6) NULL,
+    vence_en DATETIME(6) NOT NULL,
+    finalizada_en DATETIME(6) NULL,
+    INDEX ix_llamadas_iniciador (iniciador_id,estado,vence_en),
+    INDEX ix_llamadas_receptor (receptor_id,estado,vence_en),
+    CONSTRAINT fk_llamada_conversacion FOREIGN KEY (conversacion_id) REFERENCES conversaciones(id),
+    CONSTRAINT fk_llamada_iniciador FOREIGN KEY (iniciador_id) REFERENCES usuarios(id),
+    CONSTRAINT fk_llamada_receptor FOREIGN KEY (receptor_id) REFERENCES usuarios(id),
+    CONSTRAINT ck_llamada_personas CHECK (iniciador_id <> receptor_id)
+);

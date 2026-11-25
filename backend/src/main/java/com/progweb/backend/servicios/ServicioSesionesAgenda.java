@@ -87,7 +87,16 @@ public class ServicioSesionesAgenda {
     }
     @Transactional
     public RespuestaSesionAgenda cambiar(String identificador,boolean esTutor,long id,String accion) {
-        var persona=identificar(identificador,esTutor);
+        return cambiarParaPersona(identificar(identificador,esTutor),id,accion);
+    }
+    @Transactional
+    public RespuestaSesionAgenda cambiarCoordinacion(String identificador,long id,long tutor,String accion) {
+        var usuario=autenticacion.consultarSesion(identificador);
+        if(!usuario.roles().contains("coordinador"))throw new AccesoRechazado(403,"Se requiere coordinación.");
+        return cambiarParaPersona(new Persona(usuario.id(),tutor,true),id,accion);
+    }
+    private RespuestaSesionAgenda cambiarParaPersona(Persona persona,long id,String accion) {
+        boolean esTutor=persona.esTutor();
         if(!List.of("confirmar","rechazar","cancelar").contains(accion)||!esTutor&&!accion.equals("cancelar"))throw new AccesoRechazado(403,"No puedes realizar esta acción.");
         var sesion=sesiones.sesion(id,persona.perfil(),esTutor,false);
         if(sesion==null)throw new AccesoRechazado(404,"No se encontró esa sesión.");

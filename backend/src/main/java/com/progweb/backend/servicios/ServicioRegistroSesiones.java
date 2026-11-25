@@ -44,7 +44,12 @@ public class ServicioRegistroSesiones {
     }
     @Transactional
     public RespuestaSesionRealizada registrar(String identificador,SolicitudRegistrarSesion solicitud){
-        var persona=identificar(identificador);validarDuracion(solicitud.inicioEn(),solicitud.finEn());bloquear(solicitud.estudianteId(),persona.tutor());
+        return registrarPersona(identificar(identificador),solicitud);
+    }
+    private Persona coordinacion(String sujeto,long tutor){var usuario=autenticacion.consultarSesion(sujeto);if(!usuario.roles().contains("coordinador"))throw new AccesoRechazado(403,"Se requiere coordinación.");return new Persona(usuario.id(),tutor);}
+    @Transactional public RespuestaSesionRealizada registrarCoordinacion(String sujeto,long tutor,SolicitudRegistrarSesion solicitud){return registrarPersona(coordinacion(sujeto,tutor),solicitud);}
+    private RespuestaSesionRealizada registrarPersona(Persona persona,SolicitudRegistrarSesion solicitud){
+        validarDuracion(solicitud.inicioEn(),solicitud.finEn());bloquear(solicitud.estudianteId(),persona.tutor());
         if(!agenda.participantesActivos(solicitud.estudianteId(),persona.tutor())||!agenda.inscripcionVigente(solicitud.estudianteId(),persona.tutor(),solicitud.periodoId()))
             throw new SolicitudRechazada(409,"No tienes una asignación activa con este estudiante en ese periodo.","estudianteId");
         if(registros.cruce(solicitud.estudianteId(),persona.tutor(),solicitud.inicioEn(),solicitud.finEn(),null))
@@ -58,7 +63,11 @@ public class ServicioRegistroSesiones {
     }
     @Transactional
     public RespuestaSesionRealizada cerrar(String identificador,long id,SolicitudCerrarSesion solicitud){
-        var persona=identificar(identificador);var sesion=agenda.sesion(id,persona.tutor(),true,false);
+        return cerrarPersona(identificar(identificador),id,solicitud);
+    }
+    @Transactional public RespuestaSesionRealizada cerrarCoordinacion(String sujeto,long tutor,long id,SolicitudCerrarSesion solicitud){return cerrarPersona(coordinacion(sujeto,tutor),id,solicitud);}
+    private RespuestaSesionRealizada cerrarPersona(Persona persona,long id,SolicitudCerrarSesion solicitud){
+        var sesion=agenda.sesion(id,persona.tutor(),true,false);
         if(sesion==null)throw new AccesoRechazado(404,"No se encontró esa sesión.");
         bloquear(sesion.estudiante(),persona.tutor());
         if(sesion.disponibilidad()!=null)agenda.horario(sesion.disponibilidad(),true);

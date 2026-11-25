@@ -13,8 +13,8 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class EnvioTwilioPruebas {
-    EnvioTwilio crear(boolean sms,boolean whatsapp) {
-        return new EnvioTwilio(new ObjectMapper(),sms,whatsapp,"AC"+"a".repeat(32),"clave-prueba","+15551234567","+15557654321","HX"+"b".repeat(32),"America/Mexico_City","plantilla");
+    EnvioTwilio crear(boolean sms) {
+        return new EnvioTwilio(new ObjectMapper(),sms,"AC"+"a".repeat(32),"clave-prueba","+15551234567","America/Mexico_City","");
     }
     EnvioAvisoTelefonico.Confirmacion datos() { return new EnvioAvisoTelefonico.Confirmacion("Tutor prueba",LocalDateTime.of(2030,1,2,18,0),"Aula 5"); }
     String cuerpo(HttpRequest peticion) throws Exception {
@@ -34,45 +34,38 @@ class EnvioTwilioPruebas {
         ReflectionTestUtils.setField(envio,"cliente",cliente);return cliente;
     }
     @Test void preparaSmsConNumeroInternacionalYHoraLocal() throws Exception {
-        var envio=crear(true,false);var cliente=cliente(envio,201,"{\"sid\":\"SM"+"c".repeat(32)+"\"}");
+        var envio=crear(true);var cliente=cliente(envio,201,"{\"sid\":\"SM"+"c".repeat(32)+"\"}");
         assertThat(envio.enviar("sms","+525512345678",datos()).estado()).isEqualTo("aceptada");
         var peticion=org.mockito.ArgumentCaptor.forClass(HttpRequest.class);verify(cliente).send(peticion.capture(),any());
         assertThat(cuerpo(peticion.getValue())).contains("To=+525512345678","From=+15551234567","02/01/2030","12:00","Aula 5").doesNotContain("ContentSid");
     }
-    @Test void whatsappUsaPlantillaYNoTextoLibre() throws Exception {
-        var envio=crear(false,true);var cliente=cliente(envio,201,"{\"sid\":\"SM"+"c".repeat(32)+"\"}");
-        envio.enviar("whatsapp","+525512345678",datos());var peticion=org.mockito.ArgumentCaptor.forClass(HttpRequest.class);verify(cliente).send(peticion.capture(),any());
-        assertThat(cuerpo(peticion.getValue())).contains("To=whatsapp:+525512345678","ContentSid=HX","ContentVariables=","Tutor prueba","Aula 5").doesNotContain("Body=");
-    }
     @Test void noEnviaCanalesDesactivadosNiTelefonosInvalidos() throws Exception {
-        var envio=crear(false,false);var cliente=cliente(envio,201,"{}");
+        var envio=crear(false);var cliente=cliente(envio,201,"{}");
         assertThat(envio.enviar("sms","+525512345678",datos()).estado()).isEqualTo("omitida");verifyNoInteractions(cliente);
-        var activo=crear(true,false);var otro=cliente(activo,201,"{}");
+        var activo=crear(true);var otro=cliente(activo,201,"{}");
         assertThat(activo.enviar("sms","5512345678",datos()).codigo()).isEqualTo("telefono_invalido");verifyNoInteractions(otro);
     }
     @Test void distingueRechazoDeEnvioSinConfirmacionYNoExponeRespuestaPrivada() throws Exception {
-        var envio=crear(true,false);cliente(envio,400,"datos privados");
+        var envio=crear(true);cliente(envio,400,"datos privados");
         assertThat(envio.enviar("sms","+525512345678",datos()).codigo()).isEqualTo("http_400");
         cliente(envio,503,"datos privados");assertThat(envio.enviar("sms","+525512345678",datos()).estado()).isEqualTo("incierta");
         var cliente=cliente(envio,200,"{}");when(cliente.send(any(),any())).thenThrow(new java.io.IOException("datos privados"));
         assertThat(envio.enviar("sms","+525512345678",datos()).codigo()).isEqualTo("sin_confirmacion");
     }
-    @Test void exigePlantillaYCredencialesSoloAlHabilitarCanales() {
-        assertThatThrownBy(()->new EnvioTwilio(new ObjectMapper(),false,true,"","","","","","UTC","plantilla")).isInstanceOf(IllegalArgumentException.class);
-        assertThat(new EnvioTwilio(new ObjectMapper(),false,false,"","","","","","UTC","plantilla").habilitado("sms")).isFalse();
+    @Test void exigeCredencialesSoloAlHabilitarSms() {
+        assertThatThrownBy(()->new EnvioTwilio(new ObjectMapper(),true,"","","","UTC","")).isInstanceOf(IllegalArgumentException.class);
+        assertThat(new EnvioTwilio(new ObjectMapper(),false,"","","","UTC","").habilitado("sms")).isFalse();
     }
-    @Test void sandboxPermiteProbarConTextoSinUnaPlantillaPropia() throws Exception {
-        var envio=new EnvioTwilio(new ObjectMapper(),false,true,"AC"+"a".repeat(32),"clave-prueba","","+15557654321","","America/Mexico_City","sandbox");
+    @Test void smsDePruebaEnviaLaPlantillaEventNotificationsSinDatosPersonalizados() throws Exception {
+        var envio=new EnvioTwilio(new ObjectMapper(),true,"AC"+"a".repeat(32),"clave-prueba","+15551234567","America/Mexico_City","sms_event_notifications");
         var cliente=cliente(envio,201,"{\"sid\":\"SM"+"c".repeat(32)+"\"}");
-        assertThat(envio.enviar("whatsapp","+525512345678",datos()).estado()).isEqualTo("aceptada");
+        assertThat(envio.enviar("sms","+525512345678",datos()).estado()).isEqualTo("aceptada");
         var peticion=org.mockito.ArgumentCaptor.forClass(HttpRequest.class);verify(cliente).send(peticion.capture(),any());
-        assertThat(cuerpo(peticion.getValue())).contains("To=whatsapp:+525512345678","Body=","Tutor prueba","Aula 5").doesNotContain("ContentSid","ContentVariables");
+        assertThat(cuerpo(peticion.getValue())).isEqualTo("To=+525512345678&From=+15551234567&Body=sms_event_notifications");
     }
-    @Test void produccionSigueExigiendoPlantillaAprobadaYRechazaModosDesconocidos() {
-        assertThatThrownBy(()->new EnvioTwilio(new ObjectMapper(),false,true,"AC"+"a".repeat(32),"clave-prueba","","+15557654321","","UTC","plantilla"))
-            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("plantilla aprobada");
-        assertThatThrownBy(()->new EnvioTwilio(new ObjectMapper(),false,false,"","","","","","UTC","otro"))
-            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("modo de WhatsApp");
+    @Test void noPermiteUnIdentificadorDePlantillaDePruebaDesconocido() {
+        assertThatThrownBy(()->new EnvioTwilio(new ObjectMapper(),true,"AC"+"a".repeat(32),"clave-prueba","+15551234567","UTC","no_existe"))
+            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("plantilla SMS de prueba");
     }
 
 }

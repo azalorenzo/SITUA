@@ -9,8 +9,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class ServicioCierreSesion {
     private final RepositorioSesionesAcceso sesiones;
-    public ServicioCierreSesion(RepositorioSesionesAcceso sesiones){this.sesiones=sesiones;}
+    private final ServicioLlamadas llamadas;
+    public ServicioCierreSesion(RepositorioSesionesAcceso sesiones,ServicioLlamadas llamadas){this.sesiones=sesiones;this.llamadas=llamadas;}
     @Transactional public void cerrar(Jwt token){
+        llamadas.cerrarPorSalida(Long.parseLong(token.getSubject()));
         var ahora=Instant.now();
         if(token.getExpiresAt()!=null&&token.getExpiresAt().isAfter(ahora))sesiones.revocar(Long.parseLong(token.getSubject()),token.getId(),
                 LocalDateTime.ofInstant(token.getExpiresAt(),ZoneOffset.UTC),LocalDateTime.ofInstant(ahora,ZoneOffset.UTC));

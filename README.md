@@ -28,11 +28,28 @@ Aplicación web para gestionar tutorías académicas entre estudiantes, tutores 
 
 | Rol | Funciones |
 | --- | --- |
-| Coordinación | Resumen general, administración de tutores, asignaciones y avisos, consulta de estudiantes, reportes y exportación PDF. |
+| Coordinación | Resumen general, administración de usuarios, roles, tutores, catálogos, asignaciones y avisos; gestión del expediente académico, tutorías y reportes, con exportación PDF. |
 | Tutor | Consulta de tutorados y expedientes, disponibilidad, confirmación o rechazo de solicitudes, registro de tutorías, seguimiento, reportes, avisos y mensajes. |
 | Estudiante | Registro, perfil académico y datos de contacto, elección de tutor, agenda, solicitudes de tutoría, actividades personales, avisos y mensajes con su tutor. |
 
 El acceso utiliza JWT y permisos por rol. Los listados paginados y filtros se resuelven en el backend. Las lecturas de avisos y mensajes se guardan por usuario.
+
+El menú de usuario incluye Perfil para editar los datos personales. Los estudiantes pueden actualizar matrícula, carrera y semestre del periodo vigente y sus preferencias de contacto; los tutores pueden cambiar su departamento. El correo puede cambiarse si la cuenta no está vinculada con Google. La vinculación se comprueba en la base de datos y también se protege desde la API. El rol no se modifica desde esta opción.
+
+
+### Administración de coordinación
+
+Usuarios permite crear y editar cuentas de los tres roles, asignar matrícula o departamento y activar o desactivar el acceso. Los cambios de permisos, correo, contraseña o estado invalidan las sesiones anteriores. No se puede retirar el acceso propio a coordinación ni dejar el sistema sin una cuenta de coordinación activa. Una cuenta con asignaciones o sesiones pendientes debe resolverlas antes de cambiar de rol.
+
+Catálogos administra carreras, departamentos, periodos académicos y motivos de reporte. Las bajas desactivan los registros o cierran el periodo, conservando el historial. Un periodo con sesiones pendientes no puede cerrarse.
+
+Tutorías permite consultar sesiones de todos los tutores y estudiantes, programar y registrar tutorías, editar horarios futuros, confirmar o rechazar solicitudes, cancelar sesiones y registrar su resultado. Cada cambio registra al usuario de coordinación que lo realizó y respeta las validaciones de asignación y cruces de horario.
+
+Estudiantes permite editar la matrícula y los datos académicos por periodo: carrera, semestre de 1 a 12, inscripción, promedio, riesgo y observaciones. Los cambios de evaluación conservan las mediciones anteriores. Una baja o egreso requiere resolver las sesiones pendientes y finaliza las asignaciones de ese periodo.
+
+Reportes permite crear, consultar, editar, completar, reabrir y eliminar reportes desde coordinación. La eliminación requiere confirmación; las exportaciones PDF continúan disponibles. Los participantes de un reporte existente se conservan.
+
+Las tres vistas usan paginación, búsqueda y filtros del servidor, bajo `/api/coordinacion/administracion`. No requieren nuevas migraciones.
 
 ## Tecnologías
 
@@ -158,7 +175,7 @@ Coordinación es el perfil de administración disponible en la aplicación. Esta
 
 ## Base de datos y diagrama ER
 
-Las migraciones V1 a V8 definen el esquema. Hibernate tiene `ddl-auto=none`; la estructura se administra con Flyway. No modificar una migración aplicada: los cambios deben agregarse en una nueva versión.
+Las migraciones V1 a V9 definen el esquema. Hibernate tiene `ddl-auto=none`; la estructura se administra con Flyway. No modificar una migración aplicada: los cambios deben agregarse en una nueva versión.
 
 El siguiente diagrama resume las relaciones principales del sistema, incluidas las de recuperación y notificaciones:
 
@@ -194,14 +211,33 @@ erDiagram
     usuarios ||--o{ conversacion_participantes : participa
     conversaciones ||--o{ mensajes : contiene
     usuarios ||--o{ mensajes : envia
+    conversaciones ||--o{ llamadas : registra
+    usuarios ||--o{ llamadas : inicia
+    usuarios ||--o{ llamadas : recibe
     sesiones ||--o{ notificaciones_sesion : genera
 ```
 
 Las relaciones N:M incluyen usuarios–roles mediante `usuario_roles`, avisos–usuarios mediante `aviso_destinatarios` y conversaciones–usuarios mediante `conversacion_participantes`.
 
-El [respaldo SQL de estructura V3](database/respaldo_estructura_v3.sql) se conserva como referencia de esa versión. No representa por sí solo el esquema V8; para una instalación actual utilizar todas las migraciones y el seed, sin importar previamente ese respaldo sobre una base nueva.
+El [respaldo SQL de estructura V9](database/respaldo_estructura_v9.sql) corresponde al esquema actual exportado de MySQL en la VPS. Incluye tablas y vistas, sin registros, datos personales ni credenciales. Para una instalación nueva, utilizar las migraciones y el seed; no importar previamente este respaldo sobre la misma base que administrará Flyway. Los respaldos V2 y V3 se conservan como referencias históricas.
 
 ## Configuración de integraciones
+
+### Llamadas y videollamadas con Daily
+
+Configurar únicamente en `backend/.env`:
+
+```dotenv
+DAILY_CLAVE_API=tu_clave_privada
+LLAMADAS_HABILITADAS=true
+LLAMADAS_DURACION_MINUTOS=5
+```
+
+Reiniciar el backend después de cambiar estas variables. Cada entorno necesita su propia configuración. La clave no se copia al frontend.
+
+Los botones de Mensajes permiten llamar entre estudiante y tutor con una asignación activa. La invitación aparece en cualquier sección de sus perfiles y vence después de 45 segundos sin respuesta. La sala privada se crea cuando el receptor acepta; admite dos personas y finaliza a los cinco minutos. Para llamadas de voz, los permisos de Daily impiden publicar video. No se habilitan grabaciones ni transcripciones.
+
+El navegador necesita permiso para micrófono y, en videollamadas, cámara. Fuera de localhost se requiere HTTPS. El límite de duración se controla en el servidor y en Daily; el consumo depende del plan contratado con el proveedor.
 
 ### Recuperación de contraseña por correo
 
@@ -229,11 +265,20 @@ El VPS también tiene Postfix y OpenDKIM. La entrega directa con Postfix depende
 
 Configurar el mismo ID público de cliente OAuth web en `GOOGLE_CLIENTE_ID` del backend y `VITE_GOOGLE_CLIENTE_ID` del frontend. Autorizar en Google Cloud los orígenes locales y `https://situa.oaxacoders.tech`, según el entorno. Reiniciar el backend y recompilar el frontend después de cambiar estas variables.
 
-### SMS y WhatsApp
+### SMS
 
-Los estudiantes pueden registrar su teléfono internacional y autorizar cada canal desde Datos de contacto. El backend dispone de una cola de avisos asociada a la confirmación de tutorías y de una integración con Twilio. Los dos canales permanecen desactivados hasta configurar sus credenciales, remitentes y plantillas. No se acredita entrega real de SMS o WhatsApp.
+Los estudiantes pueden registrar su teléfono internacional y autorizar cada canal desde Datos de contacto. El backend dispone de una cola de avisos asociada a la confirmación de tutorías y de una integración con Twilio.
 
-La configuración está en [backend/.env.example](backend/.env.example). Mantener `SMS_HABILITADO=false` y `WHATSAPP_HABILITADO=false` mientras los proveedores no estén habilitados. La clave SMTP de Brevo no sirve para estas integraciones.
+La configuración está en [backend/.env.example](backend/.env.example). Para usar la plantilla precargada Event Notifications en una cuenta de prueba:
+
+```dotenv
+SMS_HABILITADO=true
+SMS_PLANTILLA_PRUEBA=sms_event_notifications
+```
+
+Completar también `TWILIO_CUENTA`, `TWILIO_CLAVE` y `TWILIO_REMITENTE_SMS`. Este modo envía el texto de prueba de Twilio, sin los datos personalizados de la tutoría. Los destinatarios deben estar autorizados por la cuenta de prueba y el envío está sujeto a sus restricciones. La aceptación de la petición no acredita que el SMS haya llegado al teléfono.
+
+Para una cuenta que permita texto personalizado, dejar `SMS_PLANTILLA_PRUEBA` vacío. La clave SMTP de Brevo no sirve para estas integraciones.
 
 ## API REST
 
@@ -254,6 +299,8 @@ Authorization: Bearer <token>
 | POST | `/autenticacion/google` | Ingresar mediante Google. |
 | POST | `/autenticacion/recuperacion/solicitar` | Solicitar un código por correo. |
 | POST | `/autenticacion/recuperacion/cambiar-contrasena` | Cambiar la contraseña con el código. |
+| GET | `/perfil` | Consultar el perfil propio y las opciones de edición. |
+| PUT | `/perfil` | Guardar los campos permitidos del perfil propio. |
 
 Los módulos se agrupan bajo `/coordinacion`, `/tutor` y `/estudiante`. La colección Bruno contiene los cuerpos, parámetros, permisos y resultados esperados de los recorridos de prueba.
 
@@ -271,7 +318,7 @@ npx --yes --package @usebruno/cli@4.3.0 bru run
 
 La colección contiene **79 solicitudes y 119 comprobaciones**: acceso de los tres roles, registro, permisos, errores previstos, paginación, filtros, PDF, operaciones sobre horarios, recordatorios y avisos, y rechazo del JWT después de cerrar sesión.
 
-Las pruebas crean datos identificados como Bruno. El recorrido elimina el horario y el recordatorio y retira el aviso. La cuenta registrada y el aviso retirado requieren limpieza administrativa si no se desean conservar: no existen endpoints de borrado para esos registros. La colección no envía correos, SMS ni WhatsApp, ni modifica contraseñas existentes.
+Las pruebas crean datos identificados como Bruno. El recorrido elimina el horario y el recordatorio y retira el aviso. La cuenta registrada y el aviso retirado requieren limpieza administrativa si no se desean conservar: no existen endpoints de borrado para esos registros. La colección no envía correos, SMS, ni modifica contraseñas existentes.
 
 ### Backend
 
@@ -345,7 +392,7 @@ sudo systemctl reload nginx
 | Flujos de coordinación, tutor y estudiante | Integrados con la API y MySQL. |
 | Recuperación por correo con Brevo | Operativa; recepción en bandeja comprobada. |
 | Acceso con Google | Integrado; requiere configuración OAuth válida para el entorno. |
-| SMS y WhatsApp | Desactivados; pendientes de habilitación y entrega real. |
+| SMS | SMS con plantilla de prueba Event Notifications; entrega pendiente de comprobación. |
 | Figma, GitHub Projects y datos del equipo | Apartados preparados para completar. |
 
 El correo activo mediante Brevo utiliza un proveedor externo. Si la evaluación exige entrega directa con Postfix, debe validarse esa diferencia con el docente.

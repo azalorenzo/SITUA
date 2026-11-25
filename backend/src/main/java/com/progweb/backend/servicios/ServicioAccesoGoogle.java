@@ -15,6 +15,7 @@ import com.progweb.backend.solicitudes.SolicitudAccesoGoogle;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 @Service
 public class ServicioAccesoGoogle {
@@ -25,12 +26,13 @@ public class ServicioAccesoGoogle {
     private final ServicioRegistro registro;
     private final ServicioAutenticacion autenticacion;
     private final ServicioTokens tokens;
+    private final JdbcTemplate consultas;
 
     public ServicioAccesoGoogle(VerificadorGoogle verificador, RepositorioIdentidades identidades,
             RepositorioUsuarios usuarios, PasswordEncoder codificador, ServicioRegistro registro,
-            ServicioAutenticacion autenticacion, ServicioTokens tokens) {
+            ServicioAutenticacion autenticacion, ServicioTokens tokens,JdbcTemplate consultas) {
         this.verificador = verificador; this.identidades = identidades; this.usuarios = usuarios;
-        this.codificador = codificador; this.registro = registro; this.autenticacion = autenticacion; this.tokens = tokens;
+        this.codificador = codificador; this.registro = registro; this.autenticacion = autenticacion; this.tokens = tokens;this.consultas=consultas;
     }
 
     @Transactional
@@ -42,6 +44,8 @@ public class ServicioAccesoGoogle {
         String correo = datos.correo().strip().toLowerCase(Locale.ROOT);
         Usuario usuario = usuarios.buscarPorCorreoConRoles(correo).orElse(null);
         if (usuario != null) {
+            String correoActual=consultas.queryForObject("SELECT correo FROM usuarios WHERE id=? FOR UPDATE",String.class,usuario.obtenerId());
+            if(!correo.equals(correoActual))throw new AccesoRechazado(409,"El correo de la cuenta cambió. Intenta nuevamente.");
             // Coincidir en correo no basta para unir una cuenta que ya existía.
             if (solicitud.contrasenaVinculacion() == null || solicitud.contrasenaVinculacion().isBlank()) {
                 throw new SolicitudRechazada(422, "Escribe tu contraseña actual para vincular esta cuenta con Google.",

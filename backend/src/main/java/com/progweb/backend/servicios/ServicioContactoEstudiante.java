@@ -19,15 +19,15 @@ public class ServicioContactoEstudiante {
         return usuario.id();
     }
     private RespuestaContactoEstudiante datos(long usuario) {
-        return consultas.queryForObject("SELECT telefono,acepta_sms,acepta_whatsapp FROM usuarios WHERE id=?",
-            (fila,posicion)->new RespuestaContactoEstudiante(fila.getString(1),fila.getBoolean(2),fila.getBoolean(3)),usuario);
+        return consultas.queryForObject("SELECT telefono,acepta_sms FROM usuarios WHERE id=?",
+            (fila,posicion)->new RespuestaContactoEstudiante(fila.getString(1),fila.getBoolean(2)),usuario);
     }
     public RespuestaContactoEstudiante consultar(String identificador) { return datos(identificar(identificador)); }
     @Transactional
     public RespuestaContactoEstudiante guardar(String identificador,SolicitudContactoEstudiante solicitud) {
         long usuario=identificar(identificador);
-        consultas.update("UPDATE usuarios SET telefono=?,acepta_sms=?,acepta_whatsapp=?,preferencias_contacto_en=UTC_TIMESTAMP(6) WHERE id=?",
-            solicitud.telefono().isEmpty()?null:solicitud.telefono(),solicitud.aceptaSms(),solicitud.aceptaWhatsapp(),usuario);
+        consultas.update("UPDATE usuarios SET telefono=?,acepta_sms=?,preferencias_contacto_en=UTC_TIMESTAMP(6) WHERE id=?",
+            solicitud.telefono().isEmpty()?null:solicitud.telefono(),solicitud.aceptaSms(),usuario);
         return datos(usuario);
     }
 }

@@ -10,8 +10,7 @@ http:
     data: |-
       {
         "telefono": "5512345678",
-        "aceptaSms": true,
-        "aceptaWhatsapp": false
+        "aceptaSms": true
       }
   auth:
     type: "bearer"

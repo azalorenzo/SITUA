@@ -1,3 +1,5 @@
+import { Pencil } from 'lucide-react';
+import { EditarExpedienteAdministracion } from './GestionAdministracion';
 import { useEffect, useState } from 'react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { consultarEstudiantes } from '../servicios/coordinacion';
@@ -13,6 +15,7 @@ const nivelesRiesgo = [
 ];
 
 function ListaEstudiantesCoordinacion() {
+  const [editando, cambiarEdicion] = useState<number | null>(null);
   const [busqueda, cambiarBusqueda] = useState('');
   const [busquedaAplicada, cambiarBusquedaAplicada] = useState('');
   const [estado, cambiarEstado] = useState('todos');
@@ -82,14 +85,14 @@ function ListaEstudiantesCoordinacion() {
         <p role="status" className="px-6 pt-4 text-sm text-[#53716E]">Mostrando {datos.totalRegistros?(paginaActual-1)*datos.tamano+1:0}–{Math.min(paginaActual*datos.tamano,datos.totalRegistros)} de {datos.totalRegistros} estudiantes</p>
         {visibles.length === 0 ? <p className="p-6 text-[#53716E]">{resumen!.total === 0 ? 'No hay estudiantes registrados.' : 'No se encontraron estudiantes con esos criterios.'}</p>
           : <div className="overflow-x-auto"><table className="w-full" aria-label="Lista de estudiantes"><thead className="bg-[#F5F7FA] border-b border-[#DCE3EA]"><tr>
-            {['Estudiante', 'Matrícula', 'Carrera', 'Periodo', 'Semestre', 'Promedio', 'Riesgo', 'Estado'].map(titulo => <th key={titulo} scope="col" className={estiloCelda}>{titulo}</th>)}
+            {['Estudiante', 'Matrícula', 'Carrera', 'Periodo', 'Semestre', 'Promedio', 'Riesgo', 'Estado', 'Acciones'].map(titulo => <th key={titulo} scope="col" className={estiloCelda}>{titulo}</th>)}
           </tr></thead><tbody>{visibles.map(estudiante => <tr key={estudiante.id} className="border-b border-[#DCE3EA] hover:bg-[#F5F7FA]">
             <td className={estiloCelda}><div className="flex items-center gap-3"><InicialesPersona nombre={estudiante.nombre} /><div><p className="font-medium">{estudiante.nombre}</p><p className="text-xs text-[#53716E]">{estudiante.correo}</p></div></div></td>
             <td className={estiloCelda}>{estudiante.matricula}</td><td className={estiloCelda}>{estudiante.carrera || 'Sin carrera registrada'}</td>
             <td className={estiloCelda}>{estudiante.periodo || 'Sin periodo registrado'}</td><td className={estiloCelda}>{estudiante.semestre ?? 'Sin datos'}</td>
             <td className={estiloCelda}>{estudiante.promedio === null ? 'Sin datos' : estudiante.promedio.toFixed(2)}</td>
             <td className={estiloCelda}><span style={{ color: riesgoDe(estudiante).color }}>{riesgoDe(estudiante).nombre}</span></td>
-            <td className={estiloCelda}>{estudiante.estado === 'activo' ? 'Activa' : 'Inactiva'}</td>
+            <td className={estiloCelda}>{estudiante.estado === 'activo' ? 'Activa' : 'Inactiva'}</td><td className={estiloCelda}><button type="button" aria-label={`Editar expediente de ${estudiante.nombre}`} className="p-2 text-[#1F6662]" onClick={()=>cambiarEdicion(estudiante.id)}><Pencil className="w-4 h-4"/></button></td>
           </tr>)}</tbody></table></div>}
         {datos.totalPaginas>0&&<nav aria-label="Paginación de estudiantes" className="p-6 flex flex-wrap items-center justify-end gap-2">
           <button type="button" disabled={paginaActual<=1} onClick={()=>cambiarPagina(paginaActual-1)} className="px-3 py-2 rounded-lg border border-[#DCE3EA] disabled:opacity-50">Anterior</button>
@@ -98,7 +101,7 @@ function ListaEstudiantesCoordinacion() {
         </nav>}
       </>}
     </div>
-  </section>;
+  {editando && <EditarExpedienteAdministracion estudianteId={editando} alCerrar={()=>cambiarEdicion(null)} alGuardar={()=>{cambiarEdicion(null);actualizar();}}/>}</section>;
 }
 
 export { ListaEstudiantesCoordinacion as StudentsManagementView };

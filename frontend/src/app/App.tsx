@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { cerrarSesionServidor, consultarSesion, guardarSesion, limpiarSesion, obtenerToken, obtenerVencimiento, ErrorSolicitud } from './servicios/autenticacion';
 import type { UsuarioSesion, RespuestaInicioSesion } from './tipos/autenticacion';
+import { UsuariosAdministracion, TutoriasAdministracion, CatalogosAdministracion } from './components/AdministracionVistas';
 import { Sidebar } from './components/Sidebar';
 import { InicioCoordinacion } from './components/InicioCoordinacion';
 
@@ -94,6 +95,9 @@ export default function App() {
         {/* Aquí se muestra la sección elegida en el menú. */}
         <div className="p-4 sm:p-8">
           {activeSection === 'inicio' && <InicioCoordinacion />}
+          {activeSection === 'usuarios' && <UsuariosAdministracion />}
+          {activeSection === 'tutorias' && <TutoriasAdministracion />}
+          {activeSection === 'catalogos' && <CatalogosAdministracion />}
 
           {activeSection === 'reportes' && <ReportsView />}
 
@@ -102,7 +106,7 @@ export default function App() {
           {activeSection === 'asignaciones' && <AssignmentsView />}
           {activeSection === 'avisos' && <CoordinatorNotificationsView />}
 
-          {activeSection !== 'inicio' &&
+          {!['usuarios','tutorias','catalogos'].includes(activeSection) && activeSection !== 'inicio' &&
            activeSection !== 'reportes' &&
            activeSection !== 'tutores' &&
            activeSection !== 'estudiantes' &&

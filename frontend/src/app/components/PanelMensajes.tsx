@@ -2,11 +2,13 @@ import { useEffect,useRef,useState } from 'react';
 import { ArrowLeft,Search,Send,Paperclip,MoreVertical,Phone,Video } from 'lucide-react';
 import { usarMensajes } from '../servicios/usarMensajes';
 import { EstadoConsulta } from './ConsultaCoordinacion';
+import { usarLlamadas } from './ProveedorLlamadas';
 const hora=(valor:string)=>new Date(valor+'Z').toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
 function marca(valor:string|null){if(!valor)return '';const fecha=new Date(valor+'Z');return fecha.toDateString()===new Date().toDateString()?hora(valor):fecha.toLocaleDateString('es-MX',{day:'numeric',month:'short'});}
 function Avatar({nombre,url,clases}:{nombre:string;url:string|null;clases:string}){return url?<img src={url} alt={nombre} className={`${clases} rounded-full object-cover`}/>:<div className={`${clases} shrink-0 rounded-full bg-[#1F6662] text-white flex items-center justify-center font-medium`}>{nombre.trim().split(/\s+/).slice(0,2).map(parte=>parte[0]).join('')}</div>;}
 export function PanelMensajes({esTutor}:{esTutor:boolean}){
  const datos=usarMensajes(esTutor),panel=useRef<HTMLDivElement>(null);
+ const llamadas=usarLlamadas();
  const [mostrarLista,cambiarLista]=useState(false);
  useEffect(()=>{if(panel.current)panel.current.scrollTop=panel.current.scrollHeight;},[datos.seleccionada?.id,datos.mensajes.at(-1)?.id]);
   return (
@@ -76,10 +78,10 @@ export function PanelMensajes({esTutor}:{esTutor:boolean}){
             </div>
 
             <div className="flex shrink-0 items-center gap-1">
-              <button type="button" disabled aria-label="No disponible" className="p-2 hover:bg-[#DCE3EA] rounded-lg">
+              <button type="button" disabled={!llamadas.habilitado||llamadas.ocupado} aria-label="Iniciar llamada" title="Llamar" onClick={()=>llamadas.iniciar(datos.seleccionada!.id,'audio')} className="p-2 hover:bg-[#DCE3EA] rounded-lg disabled:opacity-40">
                 <Phone className="w-5 h-5 text-[#53716E]" />
               </button>
-              <button type="button" disabled aria-label="No disponible" className="p-2 hover:bg-[#DCE3EA] rounded-lg">
+              <button type="button" disabled={!llamadas.habilitado||llamadas.ocupado} aria-label="Iniciar videollamada" title="Videollamada" onClick={()=>llamadas.iniciar(datos.seleccionada!.id,'video')} className="p-2 hover:bg-[#DCE3EA] rounded-lg disabled:opacity-40">
                 <Video className="w-5 h-5 text-[#53716E]" />
               </button>
               <button type="button" disabled aria-label="No disponible" className="p-2 hover:bg-[#DCE3EA] rounded-lg">

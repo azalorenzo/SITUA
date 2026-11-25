@@ -1,6 +1,6 @@
 # Avisos: indicaciones para integrar las pantallas de destinatarios
 
-Coordinación ya guarda avisos en `avisos` y su lista de destinatarios en `aviso_destinatarios`, dentro de una misma transacción. No se envían correos, SMS ni WhatsApp. No hay migraciones nuevas para este módulo.
+Coordinación ya guarda avisos en `avisos` y su lista de destinatarios en `aviso_destinatarios`, dentro de una misma transacción. No se envían correos, SMS. No hay migraciones nuevas para este módulo.
 
 ## Qué debe consultar tu módulo
 

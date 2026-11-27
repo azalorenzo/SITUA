@@ -24,6 +24,25 @@ Aplicación web para gestionar tutorías académicas entre estudiantes, tutores 
 | Prototipo navegable en Figma | Por completar |
 | Tablero público de GitHub Projects | Por completar |
 
+### Paleta de colores
+
+La paleta de SITUA utiliza verdes y turquesas para transmitir calma, estabilidad y confianza, acordes con el acompañamiento académico. Estos tonos cercanos entre sí mantienen la unidad visual del sistema; los colores de estado introducen diferencias para destacar información que requiere atención.
+
+| Color | Código | Uso |
+| --- | --- | --- |
+| Verde oscuro | `#1C4543` | Navegación lateral e identidad del sistema. |
+| Turquesa | `#1F6662` | Botones principales y opciones seleccionadas. |
+| Gris claro | `#F5F7FA` | Fondo de las pantallas. |
+| Blanco | `#FFFFFF` | Tarjetas, formularios y superficies de lectura. |
+| Texto oscuro | `#0B2828` | Títulos y contenido principal. |
+| Verde de estado | `#227F78` | Elementos activos y operaciones completadas. |
+| Amarillo de estado | `#986314` | Elementos pendientes y advertencias. |
+| Rojo de estado | `#B83F4B` | Errores y acciones que requieren atención. |
+
+El fondo gris claro y las tarjetas blancas separan las secciones y permiten que los datos y controles destaquen. Los textos oscuros y el turquesa de las acciones principales establecen una jerarquía visual entre contenido, navegación y botones.
+
+Los estados se acompañan de etiquetas e iconos para que su significado no dependa únicamente del color.
+
 ## Funcionalidades
 
 | Rol | Funciones |

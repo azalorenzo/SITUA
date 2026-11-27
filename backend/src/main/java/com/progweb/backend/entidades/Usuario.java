@@ -36,6 +36,21 @@ public class Usuario {
     @Column(length = 30)
     private String telefono;
 
+@Column(name = "telefono_verificado", nullable = false)
+private boolean telefonoVerificado = true;
+
+@Column(name = "codigo_whatsapp_hash", length = 255)
+private String codigoWhatsappHash;
+
+@Column(name = "codigo_whatsapp_expira_en")
+private LocalDateTime codigoWhatsappExpiraEn;
+
+@Column(name = "intentos_whatsapp", nullable = false)
+private int intentosWhatsapp = 0;
+
+@Column(name = "ultimo_codigo_whatsapp_en")
+private LocalDateTime ultimoCodigoWhatsappEn;
+
     @Column(name = "avatar_url", length = 1024)
     private String avatarUrl;
 
@@ -101,6 +116,14 @@ public class Usuario {
         this.telefono = telefono;
     }
 
+    public boolean tieneTelefonoVerificado() {
+    return telefonoVerificado;
+}
+
+public void verificarTelefono() {
+    confirmarTelefono();
+}
+
     public String obtenerAvatarUrl() {
         return avatarUrl;
     }
@@ -140,4 +163,52 @@ public class Usuario {
     public void quitarRol(Rol rol) {
         roles.remove(rol);
     }
+
+
+
+
+public void cambiarTelefonoVerificado(boolean telefonoVerificado) {
+    this.telefonoVerificado = telefonoVerificado;
+}
+
+public String obtenerCodigoWhatsappHash() {
+    return codigoWhatsappHash;
+}
+
+public void cambiarCodigoWhatsappHash(String codigoWhatsappHash) {
+    this.codigoWhatsappHash = codigoWhatsappHash;
+}
+
+public LocalDateTime obtenerCodigoWhatsappExpiraEn() {
+    return codigoWhatsappExpiraEn;
+}
+
+public void cambiarCodigoWhatsappExpiraEn(LocalDateTime fecha) {
+    this.codigoWhatsappExpiraEn = fecha;
+}
+
+public int obtenerIntentosWhatsapp() {
+    return intentosWhatsapp;
+}
+
+public void cambiarIntentosWhatsapp(int intentos) {
+    this.intentosWhatsapp = intentos;
+}
+
+public LocalDateTime obtenerUltimoCodigoWhatsappEn() {
+    return ultimoCodigoWhatsappEn;
+}
+
+public void cambiarUltimoCodigoWhatsappEn(LocalDateTime fecha) {
+    this.ultimoCodigoWhatsappEn = fecha;
+}
+
+public void confirmarTelefono() {
+    this.telefonoVerificado = true;
+    this.codigoWhatsappHash = null;
+    this.codigoWhatsappExpiraEn = null;
+    this.intentosWhatsapp = 0;
+}
+
+
 }

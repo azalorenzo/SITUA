@@ -33,18 +33,33 @@ public class ServicioAutenticacion {
     }
 
     public RespuestaInicioSesion iniciarSesion(SolicitudInicioSesion solicitud) {
-        Usuario usuario = repositorioUsuarios.buscarPorCorreoConRoles(
-                solicitud.correo().strip().toLowerCase(Locale.ROOT)).orElse(null);
-        String hash = usuario != null && usuario.obtenerContrasenaHash() != null ? usuario.obtenerContrasenaHash() : hashDeComparacion;
-        boolean coincide = false;
-        if (solicitud.contrasena().getBytes(StandardCharsets.UTF_8).length <= 72) {
-            coincide = codificador.matches(solicitud.contrasena(), hash);
-        }
-        if (usuario == null || usuario.obtenerContrasenaHash() == null || !coincide) {
-            throw new AccesoRechazado(401, "El correo o la contraseña son incorrectos.");
-        }
-        return servicioTokens.crearToken(prepararUsuario(usuario));
+    Usuario usuario = repositorioUsuarios.buscarPorCorreoConRoles(
+            solicitud.correo().strip().toLowerCase(Locale.ROOT)).orElse(null);
+
+    String hash = usuario != null && usuario.obtenerContrasenaHash() != null
+            ? usuario.obtenerContrasenaHash()
+            : hashDeComparacion;
+
+    boolean coincide = false;
+
+    if (solicitud.contrasena().getBytes(StandardCharsets.UTF_8).length <= 72) {
+        coincide = codificador.matches(solicitud.contrasena(), hash);
     }
+
+    if (usuario == null || usuario.obtenerContrasenaHash() == null || !coincide) {
+        throw new AccesoRechazado(
+                401,
+                "El correo o la contraseña son incorrectos.");
+    }
+
+    if (!usuario.tieneTelefonoVerificado()) {
+        throw new AccesoRechazado(
+                403,
+                "Tu cuenta todavía no está verificada. Revisa tu WhatsApp e introduce el código de verificación.");
+    }
+
+    return servicioTokens.crearToken(prepararUsuario(usuario));
+}
 
     public RespuestaUsuario consultarSesion(String identificador) {
         long id;

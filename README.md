@@ -14,7 +14,7 @@ Aplicación web para gestionar tutorías académicas entre estudiantes, tutores 
 
 | Integrante | Nombre completo |
 | --- | --- |
-| Integrante 1 | Azael Chávez Lorenzo |
+| Integrante 1 | Azael Chavez Lorenzo |
 | Integrante 2 | Ángel Omar Santos Ríos |
 
 ## Diseño y organización

@@ -177,7 +177,7 @@ export function MyStudentsView() {
             <Search className="w-5 h-5 text-[#53716E] absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="search"
-              aria-label="Buscar tutorado" maxLength={200}
+              aria-label="Buscar tutorado"
               maxLength={200}
               placeholder="Buscar por nombre o carrera..."
               value={searchQuery}

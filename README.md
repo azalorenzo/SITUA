@@ -10,19 +10,27 @@ Aplicación web para gestionar tutorías académicas entre estudiantes, tutores 
 
 ## Equipo
 
-**Número de equipo:** Por completar.
+**Número de equipo:** 5.
 
 | Integrante | Nombre completo |
 | --- | --- |
-| Integrante 1 | Por completar |
-| Integrante 2 | Por completar |
+| Integrante 1 | Azael Chávez Lorenzo |
+| Integrante 2 | Ángel Omar Santos Ríos |
 
 ## Diseño y organización
 
 | Recurso | Enlace |
 | --- | --- |
-| Prototipo navegable en Figma | Por completar |
-| Tablero público de GitHub Projects | Por completar |
+| Prototipo navegable en Figma | [Prototipo de SITUA](https://www.figma.com/proto/yMJJWrIkc05ESr0P1I9TPV/Proyecto-programacion-web?node-id=51-254&scaling=min-zoom&content-scaling=fixed&page-id=51%3A61&starting-point-node-id=51%3A254&show-proto-sidebar=1) |
+| Tablero público de GitHub Projects | [Seguimiento de SITUA](https://github.com/users/azalorenzo/projects/1) |
+
+### Logo
+
+![Logo de SITUA](frontend/src/assets/logos/logo-situa.svg)
+
+El símbolo forma una S con dos figuras enlazadas que representan el acompañamiento entre tutor y estudiante. Utiliza los tonos verde oscuro y turquesa de la aplicación.
+
+[Descargar logo SVG](frontend/src/assets/logos/logo-situa.svg)
 
 ### Paleta de colores
 

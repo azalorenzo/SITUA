@@ -76,3 +76,5 @@ __pycache__/
 *.py[cod]
 
 /.respaldo-local/
+/REVISION_FUNCION_TEST.md
+/VERIFICACION_SISTEMA.md
